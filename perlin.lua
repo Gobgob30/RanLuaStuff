@@ -1,3 +1,7 @@
+--[[
+    reference:
+    https://en.wikipedia.org/wiki/Perlin_noise
+]]
 local function interpolate(a0, a1, w)
     return (a1 - a0) * w + a0
 end
