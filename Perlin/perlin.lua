@@ -41,17 +41,6 @@ local function dotGridGradient(ix, iy, x, y)
     return (dx * gradient.x + dy * gradient.y)
 end
 
-local function perlin1d(x)
-    local x0 = math.floor(x)
-    local x1 = x0 + 1
-    local sx = x - x0
-    local n0, n1, value
-    n0 = dotGridGradient(x0, 0, x, 0)
-    n1 = dotGridGradient(x1, 0, x, 0)
-    value = interpolate(n0, n1, sx)
-    return value
-end
-
 local function perlin2d(x, y)
     local x0 = math.floor(x)
     local x1 = x0 + 1
@@ -71,36 +60,19 @@ local function perlin2d(x, y)
 end
 
 local function perlin3d(x, y, z)
-    local x0 = math.floor(x)
-    local x1 = x0 + 1
-    local y0 = math.floor(y)
-    local y1 = y0 + 1
-    local z0 = math.floor(z)
-    local z1 = z0 + 1
-    local sx = x - x0
-    local sy = y - y0
-    local sz = z - z0
-    local n000, n001, n010, n011, n100, n101, n110, n111
-    local ix00, ix01, ix10, ix11, iy0, iy1, value
-    n000 = dotGridGradient(x0, y0, z0, x, y, z)
-    n001 = dotGridGradient(x0, y0, z1, x, y, z)
-    n010 = dotGridGradient(x0, y1, z0, x, y, z)
-    n011 = dotGridGradient(x0, y1, z1, x, y, z)
-    n100 = dotGridGradient(x1, y0, z0, x, y, z)
-    n101 = dotGridGradient(x1, y0, z1, x, y, z)
-    n110 = dotGridGradient(x1, y1, z0, x, y, z)
-    n111 = dotGridGradient(x1, y1, z1, x, y, z)
-    ix00 = interpolate(n000, n100, sx)
-    ix01 = interpolate(n001, n101, sx)
-    ix10 = interpolate(n010, n110, sx)
-    ix11 = interpolate(n011, n111, sx)
-    iy0 = interpolate(ix00, ix10, sy)
-    iy1 = interpolate(ix01, ix11, sy)
-    value = interpolate(iy0, iy1, sz)
-    return value
+    local ab = perlin2d(x, y)
+    local bc = perlin2d(y, z)
+    local ac = perlin2d(x, z)
+
+    local ba = perlin2d(y, x)
+    local cb = perlin2d(z, y)
+    local ca = perlin2d(z, x)
+
+    local abc = ab + bc + ac + ba + cb + ca
+    return abc / 6
 end
 
-local function noise_octave(startNeg, width, height, scale, octaves, persistance, lacunarity, normalize, movementV2)
+local function generate_map_2d(startNeg, width, height, scale, octaves, persistance, lacunarity, normalize, movementV2)
     if width < 1 then
         width = 1
     end
@@ -149,7 +121,7 @@ local function noise_octave(startNeg, width, height, scale, octaves, persistance
     return map
 end
 
-local function noise_octave_3d(startNeg, width, height, depth, scale, octaves, persistance, lacunarity, normalize, movementV3)
+local function generate_map_3d(startNeg, width, height, depth, scale, octaves, persistance, lacunarity, normalize, movementV3)
     if width < 1 then
         width = 1
     end
@@ -207,7 +179,43 @@ local function noise_octave_3d(startNeg, width, height, depth, scale, octaves, p
     return map
 end
 
+local function perlin_2d(x, y, scale, octaves, persistance, lacunarity, normalize)
+    local value = 0
+    local frequency = 1
+    local amplitude = 1
+    local max = 0
+    for i = 1, octaves do
+        value = value + perlin2d(x * scale * frequency, y * scale * frequency) * amplitude
+        max = max + amplitude
+        amplitude = amplitude / persistance
+        frequency = frequency * lacunarity
+    end
+    if normalize then
+        value = value / max
+    end
+    return value
+end
+
+local function perlin_3d(x, y, z, scale, octaves, persistance, lacunarity, normalize)
+    local value = 0
+    local frequency = 1
+    local amplitude = 1
+    local max = 0
+    for i = 1, octaves do
+        value = value + perlin3d(x * scale * frequency, y * scale * frequency, z * scale * frequency) * amplitude
+        max = max + amplitude
+        amplitude = amplitude / persistance
+        frequency = frequency * lacunarity
+    end
+    if normalize then
+        value = value / max
+    end
+    return value
+end
+
 return {
-    noise_octave_2d = noise_octave,
-    noise_octave_3d = noise_octave_3d,
+    perlin_2d = perlin_2d,
+    perlin_3d = perlin_3d,
+    generate_map_2d = generate_map_2d,
+    generate_map_3d = generate_map_3d,
 }

@@ -48,9 +48,9 @@ local function parseArgs(arguments)
 end
 
 local perlin = require("perlin")
-local size, scale, octaves, persistance, lacunarity, x, y, z, xMovement, zMovement = parseArgs(args)
+local size, scale, octaves, persistance, lacunarity, x, y, z, xMovement, yMovement = parseArgs(args)
 if not size then return end
-local map = perlin.noise_octave_2d(true, size, size, scale, octaves, persistance, lacunarity, true, { x = xMovement, z = zMovement })
+-- local map = perlin.noise_octave_2d(true, size, size, scale, octaves, persistance, lacunarity, true, { x = xMovement, z = zMovement })
 local currCommands = 0
 local maxCommands = 50
 local oldExec = commands.exec
@@ -112,7 +112,7 @@ local bool, err = pcall(parallel.waitForAny, function()
                 --         print(err[1])
                 --     end
                 -- end
-                local color = colors[math.floor(map[i][j] * 15)]
+                local color = colors[math.floor(perlin.perlin_2d(i + xMovement, j + yMovement, scale, octaves, persistance, lacunarity, true) * 15)]
                 local command = string.format("setblock %d %d %d %s", x + i, y, z + j, color)
                 local bool, err = commands.exec(command)
             end

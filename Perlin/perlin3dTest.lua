@@ -51,7 +51,7 @@ end
 local perlin = require("perlin")
 local size, scale, octaves, persistance, lacunarity, x, y, z, xMovement, yMovement, zMovement = parseArgs(args)
 if not size then return end
-local map = perlin.noise_octave_3d(true, size, size, size, scale, octaves, persistance, lacunarity, true, vector.new(xMovement, yMovement, zMovement))
+local map = perlin.generate_map_3d(true, size, size, size, scale, octaves, persistance, lacunarity, true, vector.new(xMovement, yMovement, zMovement))
 local currCommands = 0
 local maxCommands = 50
 local oldExec = commands.exec
