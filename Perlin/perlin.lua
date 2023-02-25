@@ -14,10 +14,19 @@ function yield()
         yieldTime = os.clock() -- store the time
     end
 end
-
 local function interpolate(a0, a1, w)
-    return (a1 - a0) * w + a0
-end
+
+    -- return (a1 - a0) * w + a0
+
+    --[[ Use this cubic interpolation [Smoothstep] instead, for a smooth appearance: ]]
+
+    -- return (a1 - a0) * (3.0 - w * 2.0) * w * w + a0;
+
+    -- Use [[Smootherstep]] for an even smoother result with a second derivative equal to zero on boundaries:
+
+    return (a1 - a0) * ((w * (w * 6.0 - 15.0) + 10.0) * w * w * w) + a0
+
+  end
 
 local function randomGradient(ix, iy)
     local w = 8 * 32
@@ -213,9 +222,17 @@ local function perlin_3d(x, y, z, scale, octaves, persistance, lacunarity, norma
     return value
 end
 
+function map(value, fromLow, fromHigh, toLow, toHigh)
+    return (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow
+end
+
+
 return {
     perlin_2d = perlin_2d,
     perlin_3d = perlin_3d,
     generate_map_2d = generate_map_2d,
     generate_map_3d = generate_map_3d,
+    helpers = {
+        map = map,
+    },
 }
