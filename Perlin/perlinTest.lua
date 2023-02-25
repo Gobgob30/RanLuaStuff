@@ -46,16 +46,10 @@ local function draw(xMovement, yMovement)
                 local value = perlin.perlin_3d(i + ranX, j + ranY, yMovement, .00354684, 5, 0.5, 2, true)
                 local a = math.floor(perlin.helpers.map(value, -1, 1, 1, #c))
                 box.CANVAS[j][i] = c[a]
-            elseif args[1] == "2" then
+            else
                 local value = perlin.perlin_2d(i + ranX, (j + yMovement) + ranY, .00354684, 5, 0.5, 2, true)
                 local a = math.floor(perlin.helpers.map(value, -1, 1, 1, #c))
                 box.CANVAS[j][i] = c[a]
-            else
-                local value = math.random(1, #c)
-                if not c[value] then
-                    error("Value: " .. tostring(value))
-                end
-                box.CANVAS[j][i] = c[value]
             end
         end
     end
