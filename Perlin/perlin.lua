@@ -61,6 +61,19 @@ function brshift(a, b)
     return math.floor(a) * 2 ^ math.floor(b)
 end
 
+if bit.bxor then
+    bxor = bit.bxor
+end
+if bit.bor then
+    bor = bit.bor
+end
+if bit.blshift then
+    blshift = bit.blshift
+end
+if bit.brshift then
+    brshift = bit.brshift
+end
+
 local function randomGradient(ix, iy)
     local w = 8 * 32
     local s = w / 2
