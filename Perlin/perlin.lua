@@ -164,6 +164,7 @@ local function generate_map_2d(startNeg, width, height, scale, octaves, persista
                 max = max + amplitude
                 amplitude = amplitude / persistance
                 frequency = frequency * lacunarity
+                yield()
             end
             if normalize then
                 value = value / max
@@ -220,6 +221,7 @@ local function generate_map_3d(startNeg, width, height, depth, scale, octaves, p
                     max = max + amplitude
                     amplitude = amplitude / persistance
                     frequency = frequency * lacunarity
+                    yield()
                 end
                 if normalize then
                     value = value / max
@@ -244,6 +246,7 @@ local function perlin_2d(x, y, scale, octaves, persistance, lacunarity, normaliz
         max = max + amplitude
         amplitude = amplitude / persistance
         frequency = frequency * lacunarity
+        yield()
     end
     if normalize then
         value = value / max
@@ -261,6 +264,7 @@ local function perlin_3d(x, y, z, scale, octaves, persistance, lacunarity, norma
         max = max + amplitude
         amplitude = amplitude / persistance
         frequency = frequency * lacunarity
+        yield()
     end
     if normalize then
         value = value / max
