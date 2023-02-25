@@ -14,19 +14,52 @@ function yield()
         yieldTime = os.clock() -- store the time
     end
 end
+
 local function interpolate(a0, a1, w)
-
     -- return (a1 - a0) * w + a0
-
     --[[ Use this cubic interpolation [Smoothstep] instead, for a smooth appearance: ]]
-
     -- return (a1 - a0) * (3.0 - w * 2.0) * w * w + a0;
-
     -- Use [[Smootherstep]] for an even smoother result with a second derivative equal to zero on boundaries:
-
     return (a1 - a0) * ((w * (w * 6.0 - 15.0) + 10.0) * w * w * w) + a0
+end
 
-  end
+-- Bitwise OR operation
+function bor(a, b)
+    local result = 0
+    local bitval = 1
+    while a > 0 or b > 0 do
+        if a % 2 == 1 or b % 2 == 1 then
+            result = result + bitval
+        end
+        bitval = bitval * 2
+        a = math.floor(a / 2)
+        b = math.floor(b / 2)
+    end
+    return result
+end
+
+-- Bitwise XOR operation
+function bxor(a, b)
+    local result = 0
+    local bitval = 1
+    while a > 0 or b > 0 do
+        if a % 2 ~= b % 2 then
+            result = result + bitval
+        end
+        bitval = bitval * 2
+        a = math.floor(a / 2)
+        b = math.floor(b / 2)
+    end
+    return result
+end
+
+function blshift(a, b)
+    return math.floor(math.floor(a) / 2 ^ math.floor(b))
+end
+
+function brshift(a, b)
+    return math.floor(a) * 2 ^ math.floor(b)
+end
 
 local function randomGradient(ix, iy)
     local w = 8 * 32
@@ -34,9 +67,9 @@ local function randomGradient(ix, iy)
     local a = ix
     local b = iy
     a = a * 3284157443
-    b = bit.bxor(b, bit.bor(bit.blshift(a, s), bit.brshift(a, w - s)))
+    b = bxor(b, bor(blshift(a, s), brshift(a, w - s)))
     b = b * 1911520717
-    a = bit.bxor(a, bit.bor(bit.blshift(b, s), bit.brshift(b, w - s)))
+    a = bxor(a, bor(blshift(b, s), brshift(b, w - s)))
     a = a * 2048419325
     local random = a * (math.pi / -9223372036854775808)
     local v = { x = math.cos(random), y = math.sin(random) }
@@ -225,7 +258,6 @@ end
 function map(value, fromLow, fromHigh, toLow, toHigh)
     return (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow
 end
-
 
 return {
     perlin_2d = perlin_2d,
