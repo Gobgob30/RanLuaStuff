@@ -1,10 +1,10 @@
-local yieldTime -- variable to store the time of the last yield
+local yieldTime                            -- variable to store the time of the last yield
 function yield()
-    if yieldTime then -- check if it already yielded
+    if yieldTime then                      -- check if it already yielded
         if os.clock() - yieldTime > 2 then -- if it were more than 2 seconds since the last yield
             os.queueEvent("someFakeEvent") -- queue the event
-            os.pullEvent("someFakeEvent") -- pull it
-            yieldTime = nil -- reset the counter
+            os.pullEvent("someFakeEvent")  -- pull it
+            yieldTime = nil                -- reset the counter
         end
     else
         yieldTime = os.clock() -- store the time
@@ -24,7 +24,7 @@ local function ranNum(lower_bound, upper_bound)
 end
 
 local function help()
-    print("Usage: island2 <size> <scale> <octaves> <persistance> <lacunarity> <x> <y> <z> <xMovement> <yMovement>")
+    print("Usage: island2 <size> <scale> <octaves> <persistance> <lacunarity> <x> <y> <z>")
     print("size: the size of the map, default: 25")
     print("scale: the scale of the map, default: 0.0295843")
     print("octaves: the number of octaves, default: 3")
@@ -47,31 +47,22 @@ local function parseArgs(arguments)
     elseif arguments[1] == "help" then
         return help()
     end
-    local size = tonumber(arguments[1]) or 25
-    local scale = tonumber(arguments[2]) or 0.0295843
-    local octaves = tonumber(arguments[3]) or 3
-    local persistance = tonumber(arguments[4]) or .5
-    local lacunarity = tonumber(arguments[5]) or 1.2568
-    local x = tonumber(arguments[6])
-    local y = tonumber(arguments[7])
-    local z = tonumber(arguments[8])
-    if not x or not y or not z then
+    if not tonumber(arguments[6]) or not tonumber(arguments[7]) or not tonumber(arguments[8]) then
         return error("No coordinates provided")
     end
-    return size, scale, octaves, persistance, lacunarity, x, y, z
+    return tonumber(arguments[1]) or 25, tonumber(arguments[2]) or 0.0295843, tonumber(arguments[3]) or 3, tonumber(arguments[4]) or .5, tonumber(arguments[5]) or 1.2568, tonumber(arguments[6]), tonumber(arguments[7]), tonumber(arguments[8])
 end
 
 local size, scale, octaves, persistance, lacunarity, x, y, z = parseArgs(args)
 local mapScale, mapPer, mapLac, mapOct = scale * 2, persistance * 2, lacunarity * 2, octaves * 2
 local surfaceScale, surfacePer, surfaceLac, surfaceOct = scale, persistance, lacunarity, octaves
 local randomX, randomY, randomZ = ranNum(0, 100000), ranNum(0, 100000), ranNum(0, 100000)
-commands.exec(string.format('/tellraw Sea_of_the_Bass [{"text":"Starting at: ","color":"dark_blue","bold":true,"italic":true},{"text":"%d %d %d","clickEvent":{"action":"run_command","value":"/tp @s %d %d %d"}}]', x, y, z, x, y + 10, z))
-commands.exec(string.format("/tp Sea_of_the_Bass %d %d %d", x, y + 2.5, z))
-commands.exec(string.format("/execute positioned %d %d %d as @p[distance=..%d] at @s run tp @s ~ ~%d ~", x, y, z, size, size * 3))
+commands.exec(string.format('/tellraw @p [{"text":"Starting at: ","color":"dark_blue","bold":true,"italic":true},{"text":"%d %d %d","clickEvent":{"action":"run_command","value":"/tp @s %d %d %d"}}]', x, y, z, x, y + 10, z))
+-- commands.exec(string.format("/tp Sea_of_the_Bass %d %d %d", x, y + 2.5, z))
+-- commands.exec(string.format("/execute positioned %d %d %d as @p[distance=..%d] at @s run tp @s ~ ~%d ~", x, y, z, size, size * 3))
 commands.say(string.format("Size: %d", size))
 
 for i = -size, size do
-    commands.tp("Sea_of_the_Bass", i + x, y + 30, z)
     for j = -size, size do
         local height = math.floor(perlin.perlin_2d(i + randomX, j + randomY, mapScale, mapOct, mapPer, mapLac, true) * 25) + 10
         local surface = math.floor(perlin.perlin_2d(i + randomX, j + randomY, surfaceScale, surfaceOct, surfacePer, surfaceLac, true) * 8)
