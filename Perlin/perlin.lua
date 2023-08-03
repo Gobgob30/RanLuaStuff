@@ -2,247 +2,198 @@
     reference:
     https://en.wikipedia.org/wiki/Perlin_noise
 ]]
-local yieldTime -- variable to store the time of the last yield
+local yieldTime                            -- variable to store the time of the last yield
 function yield()
-    if yieldTime then -- check if it already yielded
+    if yieldTime then                      -- check if it already yielded
         if os.clock() - yieldTime > 2 then -- if it were more than 2 seconds since the last yield
             os.queueEvent("someFakeEvent") -- queue the event
-            os.pullEvent("someFakeEvent") -- pull it
-            yieldTime = nil -- reset the counter
+            os.pullEvent("someFakeEvent")  -- pull it
+            yieldTime = nil                -- reset the counter
         end
     else
         yieldTime = os.clock() -- store the time
     end
 end
 
-local function interpolate(a0, a1, w)
-    -- return (a1 - a0) * w + a0
-    --[[ Use this cubic interpolation [Smoothstep] instead, for a smooth appearance: ]]
-    -- return (a1 - a0) * (3.0 - w * 2.0) * w * w + a0;
-    -- Use [[Smootherstep]] for an even smoother result with a second derivative equal to zero on boundaries:
-    return (a1 - a0) * ((w * (w * 6.0 - 15.0) + 10.0) * w * w * w) + a0
+local permutation = { 151, 160, 137, 91, 90, 15,
+    131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69, 142, 8, 99, 37, 240, 21, 10, 23,
+    190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117, 35, 11, 32, 57, 177, 33,
+    88, 237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165, 71, 134, 139, 48, 27, 166,
+    77, 146, 158, 231, 83, 111, 229, 122, 60, 211, 133, 230, 220, 105, 92, 41, 55, 46, 245, 40, 244,
+    102, 143, 54, 65, 25, 63, 161, 1, 216, 80, 73, 209, 76, 132, 187, 208, 89, 18, 169, 200, 196,
+    135, 130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186, 3, 64, 52, 217, 226, 250, 124, 123,
+    5, 202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206, 59, 227, 47, 16, 58, 17, 182, 189, 28, 42,
+    223, 183, 170, 213, 119, 248, 152, 2, 44, 154, 163, 70, 221, 153, 101, 155, 167, 43, 172, 9,
+    129, 22, 39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104, 218, 246, 97, 228,
+    251, 34, 242, 193, 238, 210, 144, 12, 191, 179, 162, 241, 81, 51, 145, 235, 249, 14, 239, 107,
+    49, 192, 214, 31, 181, 199, 106, 157, 184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254,
+    138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180
+}
+
+local p = {}
+for x = -512, 512 do
+    p[x] = permutation[x % 256]
+end
+local _repeat = -1
+
+local function fade(t)
+    return t * t * t * (t * (t * 6 - 15) + 10)
 end
 
--- Bitwise OR operation
-function bor(a, b)
-    local result = 0
-    local bitval = 1
-    while a > 0 or b > 0 do
-        if a % 2 == 1 or b % 2 == 1 then
-            result = result + bitval
-        end
-        bitval = bitval * 2
-        a = math.floor(a / 2)
-        b = math.floor(b / 2)
+local function increase(num)
+    num = num + 1
+    if (_repeat > 0) then
+        num = num % _repeat
     end
-    return result
+    return num
 end
 
--- Bitwise XOR operation
-function bxor(a, b)
-    local result = 0
-    local bitval = 1
-    while a > 0 or b > 0 do
-        if a % 2 ~= b % 2 then
-            result = result + bitval
-        end
-        bitval = bitval * 2
-        a = math.floor(a / 2)
-        b = math.floor(b / 2)
-    end
-    return result
+-- local function grad(hash, x, y, z)
+--     local h = bit.band(hash, 15)
+--     local u = h < 8 and x or y
+
+--     local v
+--     if h < 4 then
+--         v = y
+--     elseif h == 12 or h == 14 then
+--         v = x
+--     else
+--         v = z
+--     end
+
+--     return (bit.band(h, 1) == 0 and u or -u) + (bit.band(h, 2) == 0 and v or -v)
+-- end
+
+local function lerp(a, b, x)
+    return a + x * (b - a)
 end
 
-function blshift(a, b)
-    return math.floor(math.floor(a) / 2 ^ math.floor(b))
+local function cantor_pair(a, b)
+    local hash_a = (a >= 0 and a * 2 or a * -2 - 1)
+    local hash_b = (b >= 0 and b * 2 or b * -2 - 1)
+
+    local hash_c = ((hash_a >= hash_b) and hash_a ^ 2 + hash_a + hash_b or hash_a + hash_b ^ 2) / 2
+
+    return (a < 0 and b < 0 or a >= 0 and b >= 0) and hash_c or -hash_c - 1
 end
 
-function brshift(a, b)
-    return math.floor(a) * 2 ^ math.floor(b)
+
+local function grad(map_seed, x, y, z)
+    return cantor_pair(map_seed, cantor_pair(x, y) + cantor_pair(x, z) + cantor_pair(y, z))
 end
 
-if bit.bxor then
-    bxor = bit.bxor
-end
-if bit.bor then
-    bor = bit.bor
-end
-if bit.blshift then
-    blshift = bit.blshift
-end
-if bit.brshift then
-    brshift = bit.brshift
-end
+local function perlin(seed, x, y, z)
+    if not y then
+        y = 1
+    end
+    if not z then
+        z = 1
+    end
+    if (_repeat > 0) then
+        x, y, z = x % _repeat, y % _repeat, z % _repeat
+    end
+    local xi = bit.band(math.floor(x), 256)
+    local yi = bit.band(math.floor(y), 256)
+    local zi = bit.band(math.floor(z), 256)
+    local xf = x - math.floor(x)
+    local yf = y - math.floor(y)
+    local zf = z - math.floor(z)
+    local u = fade(xf)
+    local v = fade(yf)
+    local w = fade(zf)
+    local x1, x2, y1, y2
+    x1 = lerp(grad(seed, xf, yf, zf),
+        grad(seed, xf - 1, yf, zf),
+        u);
+    x2 = lerp(grad(seed, xf, yf - 1, zf),
+        grad(seed, xf - 1, yf - 1, zf),
+        u);
+    y1 = lerp(x1, x2, v);
 
-local function randomGradient(ix, iy)
-    local w = 8 * 32
-    local s = w / 2
-    local a = ix
-    local b = iy
-    a = a * 3284157443
-    b = bxor(b, bor(blshift(a, s), brshift(a, w - s)))
-    b = b * 1911520717
-    a = bxor(a, bor(blshift(b, s), brshift(b, w - s)))
-    a = a * 2048419325
-    local random = a * (math.pi / -9223372036854775808)
-    local v = { x = math.cos(random), y = math.sin(random) }
-    return v
-end
+    x1 = lerp(grad(seed, xf, yf, zf - 1),
+        grad(seed, xf - 1, yf, zf - 1),
+        u);
+    x2 = lerp(grad(seed, xf, yf - 1, zf - 1),
+        grad(seed, xf - 1, yf - 1, zf - 1),
+        u);
+    y2 = lerp(x1, x2, v);
 
-local function dotGridGradient(ix, iy, x, y)
-    local gradient = randomGradient(ix, iy)
-    local dx = x - ix
-    local dy = y - iy
-    return (dx * gradient.x + dy * gradient.y)
-end
-
-local function perlin2d(x, y)
-    local x0 = math.floor(x)
-    local x1 = x0 + 1
-    local y0 = math.floor(y)
-    local y1 = y0 + 1
-    local sx = x - x0
-    local sy = y - y0
-    local n0, n1, ix0, ix1, value
-    n0 = dotGridGradient(x0, y0, x, y)
-    n1 = dotGridGradient(x1, y0, x, y)
-    ix0 = interpolate(n0, n1, sx)
-    n0 = dotGridGradient(x0, y1, x, y)
-    n1 = dotGridGradient(x1, y1, x, y)
-    ix1 = interpolate(n0, n1, sx)
-    value = interpolate(ix0, ix1, sy)
-    return value
+    return lerp(y1, y2, w)
 end
 
-local function perlin3d(x, y, z)
-    local ab = perlin2d(x, y)
-    local bc = perlin2d(y, z)
-    local ac = perlin2d(x, z)
+-- local function interpolate(a0, a1, w)
+--     -- return (a1 - a0) * w + a0
+--     --[[ Use this cubic interpolation [Smoothstep] instead, for a smooth appearance: ]]
+--     -- return (a1 - a0) * (3.0 - w * 2.0) * w * w + a0;
+--     -- Use [[Smootherstep]] for an even smoother result with a second derivative equal to zero on boundaries:
+--     return (a1 - a0) * ((w * (w * 6.0 - 15.0) + 10.0) * w * w * w) + a0
+-- end
 
-    local ba = perlin2d(y, x)
-    local cb = perlin2d(z, y)
-    local ca = perlin2d(z, x)
 
-    local abc = ab + bc + ac + ba + cb + ca
-    return abc / 6
-end
+-- local function cantor_pair(x, y)
+--     return (x + y) * (x + y + 1) / 2 + y
+-- end
 
-local function generate_map_2d(startNeg, width, height, scale, octaves, persistance, lacunarity, normalize, movementV2)
-    if width < 1 then
-        width = 1
-    end
-    if height < 1 then
-        height = 1
-    end
 
-    if octaves < 1 then
-        octaves = 1
-    end
-    if persistance < 0.0000001 then
-        persistance = 0.0000001
-    elseif persistance > 1 then
-        persistance = 1
-    end
-    if lacunarity < 1 then
-        lacunarity = 1
-    end
-    local x, z = 0, 0
-    if movementV2 and type(movementV2) == "table" then
-        x = movementV2.x or 0
-        z = movementV2.y or 0
-    end
-    local map = {}
-    for i = startNeg and -width or 0, width do
-        map[i] = {}
-        for j = startNeg and -height or 0, height do
-            local value = 0
-            local frequency = 1
-            local amplitude = 1
-            local max = 0
-            for k = 1, octaves do
-                value = value + perlin2d((i + x) * scale * frequency, (j + z) * scale * frequency) * amplitude
-                max = max + amplitude
-                amplitude = amplitude / persistance
-                frequency = frequency * lacunarity
-                yield()
-            end
-            if normalize then
-                value = value / max
-            end
-            map[i][j] = value
-            yield()
-        end
-        yield()
-    end
-    return map
-end
+-- local function randomGradient(ix, iy)
+--     local w = 8 * 32
+--     local s = w / 2
+--     local a = ix
+--     local b = iy
+--     a = a * 3284157443
+--     b = bxor(b, bor(blshift(a, s), brshift(a, w - s)))
+--     b = b * 1911520717
+--     a = bxor(a, bor(blshift(b, s), brshift(b, w - s)))
+--     a = a * 2048419325
+--     local random = a * (math.pi / -9223372036854775808)
+--     local v = { x = math.cos(random), y = math.sin(random) }
+--     return v
+-- end
 
-local function generate_map_3d(startNeg, width, height, depth, scale, octaves, persistance, lacunarity, normalize, movementV3)
-    if width < 1 then
-        width = 1
-    end
-    if height < 1 then
-        height = 1
-    end
-    if depth < 1 then
-        depth = 1
-    end
+-- local function dotGridGradient(ix, iy, x, y, seed)
+--     local gradient = randomGradient(ix, iy)
+--     local dx = x - ix
+--     local dy = y - iy
+--     return (dx * gradient.x + dy * gradient.y)
+-- end
 
-    if octaves < 1 then
-        octaves = 1
-    end
-    if persistance < 0.0000001 then
-        persistance = 0.0000001
-    elseif persistance > 1 then
-        persistance = 1
-    end
-    if lacunarity < 1 then
-        lacunarity = 1
-    end
-    local x, y, z = 0, 0, 0
-    if movementV3 and type(movementV3) == "table" then
-        x = movementV3.x or 0
-        y = movementV3.y or 0
-        z = movementV3.z or 0
-    end
+-- local function perlin2d(x, y, seed)
+--     local x0 = math.floor(x)
+--     local x1 = x0 + 1
+--     local y0 = math.floor(y)
+--     local y1 = y0 + 1
+--     local sx = x - x0
+--     local sy = y - y0
+--     local n0, n1, ix0, ix1
+--     n0 = dotGridGradient(x0, y0, x, y, seed)
+--     n1 = dotGridGradient(x1, y0, x, y, seed)
+--     ix0 = interpolate(n0, n1, sx)
+--     n0 = dotGridGradient(x0, y1, x, y, seed)
+--     n1 = dotGridGradient(x1, y1, x, y, seed)
+--     ix1 = interpolate(n0, n1, sx)
+--     return interpolate(ix0, ix1, sy)
+-- end
 
-    local map = {}
-    for i = startNeg and -width or 0, width do
-        map[i] = {}
-        for j = startNeg and -height or 0, height do
-            map[i][j] = {}
-            for k = startNeg and -depth or 0, depth do
-                local value = 0
-                local frequency = 1
-                local amplitude = 1
-                local max = 0
-                for l = 1, octaves do
-                    value = value + perlin3d((i + x) * scale * frequency, (j + y) * scale * frequency, (k + z) * scale * frequency) * amplitude
-                    max = max + amplitude
-                    amplitude = amplitude / persistance
-                    frequency = frequency * lacunarity
-                    yield()
-                end
-                if normalize then
-                    value = value / max
-                end
-                map[i][j][k] = value
-                yield()
-            end
-            yield()
-        end
-        yield()
-    end
-    return map
-end
+-- local function perlin3d(x, y, z, seed)
+--     local ab = perlin2d(x, y, seed)
+--     local bc = perlin2d(y, z, seed)
+--     local ac = perlin2d(x, z, seed)
 
-local function perlin_2d(x, y, scale, octaves, persistance, lacunarity, normalize)
+--     local ba = perlin2d(y, x, seed)
+--     local cb = perlin2d(z, y, seed)
+--     local ca = perlin2d(z, x, seed)
+
+--     local abc = ab + bc + ac + ba + cb + ca
+--     return abc / 6
+-- end
+
+local function perlin_2d(x, y, scale, octaves, persistance, lacunarity, normalize, seed)
     local value = 0
     local frequency = 1
     local amplitude = 1
     local max = 0
     for i = 1, octaves do
-        value = value + perlin2d(x * scale * frequency, y * scale * frequency) * amplitude
+        value = value + perlin(x * scale * frequency, y * scale * frequency, seed) * amplitude
         max = max + amplitude
         amplitude = amplitude / persistance
         frequency = frequency * lacunarity
@@ -254,13 +205,13 @@ local function perlin_2d(x, y, scale, octaves, persistance, lacunarity, normaliz
     return value
 end
 
-local function perlin_3d(x, y, z, scale, octaves, persistance, lacunarity, normalize)
+local function perlin_3d(x, y, z, scale, octaves, persistance, lacunarity, normalize, seed)
     local value = 0
     local frequency = 1
     local amplitude = 1
     local max = 0
     for i = 1, octaves do
-        value = value + perlin3d(x * scale * frequency, y * scale * frequency, z * scale * frequency) * amplitude
+        value = value + perlin(x * scale * frequency, y * scale * frequency, z * scale * frequency, seed) * amplitude
         max = max + amplitude
         amplitude = amplitude / persistance
         frequency = frequency * lacunarity
@@ -279,8 +230,6 @@ end
 return {
     perlin_2d = perlin_2d,
     perlin_3d = perlin_3d,
-    generate_map_2d = generate_map_2d,
-    generate_map_3d = generate_map_3d,
     helpers = {
         map = map,
     },
