@@ -11,6 +11,19 @@ function yield()
     end
 end
 
+local function run(run_table)
+    if #run_table > 64 * 1 then
+        local run_new_tbl = {}
+        for i = 1, 64 * 1 do
+            table.insert(run_new_tbl, table.remove(run_table, 1))
+        end
+        parallel.waitForAll(table.unpack(run_new_tbl))
+        return run(run_table)
+    else
+        parallel.waitForAll(table.unpack(run_table))
+    end
+end
+
 local hasPerlin, perlin = pcall(require, "perlin")
 if not hasPerlin then
     shell.run("wget", "https://raw.githubusercontent.com/Gobgob30/RanLuaStuff/main/perlin.lua", "perlin.lua")
@@ -47,50 +60,45 @@ local function parseArgs(arguments)
     elseif arguments[1] == "help" then
         return help()
     end
-    if not tonumber(arguments[6]) or not tonumber(arguments[7]) or not tonumber(arguments[8]) then
-        return error("No coordinates provided")
+    if not tonumber(arguments[1]) or not tonumber(arguments[2]) or not tonumber(arguments[3]) then
+        return error(string.format("No coordinates provided %s %s %s", arguments[1], arguments[2], arguments[3]))
     end
-    return tonumber(arguments[1]) or 25, tonumber(arguments[2]) or 0.0295843, tonumber(arguments[3]) or 3, tonumber(arguments[4]) or .5, tonumber(arguments[5]) or 1.2568, tonumber(arguments[6]), tonumber(arguments[7]), tonumber(arguments[8])
+    return tonumber(arguments[4]) or 25, tonumber(arguments[5]) or 0.0295843, tonumber(arguments[6]) or 3, tonumber(arguments[7]) or .5, tonumber(arguments[8]) or 1.2568, tonumber(arguments[1]), tonumber(arguments[2]), tonumber(arguments[3])
 end
 
 local size, scale, octaves, persistance, lacunarity, x, y, z = parseArgs(args)
-local mapScale, mapPer, mapLac, mapOct = scale * 2, persistance * 2, lacunarity * 2, octaves * 2
 local surfaceScale, surfacePer, surfaceLac, surfaceOct = scale, persistance, lacunarity, octaves
-local randomX, randomY, randomZ = ranNum(0, 100000), ranNum(0, 100000), ranNum(0, 100000)
-commands.exec(string.format('/tellraw @p [{"text":"Starting at: ","color":"dark_blue","bold":true,"italic":true},{"text":"%d %d %d","clickEvent":{"action":"run_command","value":"/tp @s %d %d %d"}}]', x, y, z, x, y + 10, z))
--- commands.exec(string.format("/tp Sea_of_the_Bass %d %d %d", x, y + 2.5, z))
--- commands.exec(string.format("/execute positioned %d %d %d as @p[distance=..%d] at @s run tp @s ~ ~%d ~", x, y, z, size, size * 3))
-commands.say(string.format("Size: %d", size))
-
+local mapScale, mapPer, mapLac, mapOct = scale, persistance, lacunarity, octaves
+commands.say(string.format("Size: %d, Start x: %d y: %d z: %d End x: %d y: %d z: %d", size, x + size, y + size, z + size, x - size, y - size, z - size))
+local command = {}
 for i = -size, size do
     for j = -size, size do
-        local height = math.floor(perlin.perlin_2d(i + randomX, j + randomY, mapScale, mapOct, mapPer, mapLac, true) * 25) + 10
-        local surface = math.floor(perlin.perlin_2d(i + randomX, j + randomY, surfaceScale, surfaceOct, surfacePer, surfaceLac, true) * 8)
+        local height = math.floor(perlin.perlin_2d(i, j, mapScale, mapOct, mapPer, mapLac, true) * 25) + 10
+        local surface = math.floor(perlin.perlin_2d(i, j, surfaceScale, surfaceOct, surfacePer, surfaceLac, true) * 8)
         local distance = math.sqrt(i ^ 2 + j ^ 2)
-        -- print(i, j, height, surface)
         if distance <= size then
-            local _command = {}
-            for k = -height, surface + 3 do
+            for k = -height, surface do
                 local block
-                if k == surface + 3 then
+                local perlin3d = perlin.perlin_3d(i, k, j, scale, octaves, persistance, lacunarity, true)
+                if k == surface and perlin3d > 0 then
                     block = "minecraft:grass_block"
-                elseif k > surface then
+                elseif k > surface and perlin3d > 0 then
                     block = "minecraft:dirt"
-                else
+                elseif perlin3d > 0 then
                     block = "minecraft:stone"
-                end
-                -- print(perlin.perlin_3d(i + randomX, k + randomZ, j + randomY, ranNum(.05, .000001), 2, ranNum(.25, .875), ranNum(0, 10), true))
-                if perlin.perlin_3d(i + randomX, k + randomZ, j + randomY, scale, octaves, persistance, lacunarity, true) < 0 then
+                else
                     block = "minecraft:air"
                 end
-                -- write(block .. " ")
-                table.insert(_command, function()
-                    commands.exec(string.format("/setblock %d %d %d %s", i + x, k + y, j + z, block))
+                -- if perlin.perlin_3d(i, k, j, scale, octaves, persistance, lacunarity, true) < 0 then
+                --     block = "minecraft:air"
+                -- end
+                table.insert(command, function()
+                    commands.setblock(x + i, y + k, z + j, block)
                 end)
                 yield()
             end
             -- commands.tp("Sea_of_the_Bass", i + x, y + 30, j + z)
-            parallel.waitForAll(table.unpack(_command))
         end
     end
 end
+run(command)
