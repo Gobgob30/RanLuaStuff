@@ -30,23 +30,23 @@ local permutation = { 151, 160, 137, 91, 90, 15,
     138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180
 }
 
-local p = {}
-for x = -512, 512 do
-    p[x] = permutation[x % 256]
-end
-local _repeat = -1
+-- local p = {}
+-- for x = 0, 1024 do
+--     p[x] = permutation[x % 256 == 0 and 1 or x % 256]
+-- end
+-- local _repeat = -1
 
-local function fade(t)
-    return t * t * t * (t * (t * 6 - 15) + 10)
-end
+-- local function fade(t)
+--     return t * t * t * (t * (t * 6 - 15) + 10)
+-- end
 
-local function increase(num)
-    num = num + 1
-    if (_repeat > 0) then
-        num = num % _repeat
-    end
-    return num
-end
+-- local function increase(num)
+--     num = num + 1
+--     if (_repeat > 0) then
+--         num = num % _repeat
+--     end
+--     return num
+-- end
 
 -- local function grad(hash, x, y, z)
 --     local h = bit.band(hash, 15)
@@ -64,136 +64,163 @@ end
 --     return (bit.band(h, 1) == 0 and u or -u) + (bit.band(h, 2) == 0 and v or -v)
 -- end
 
-local function lerp(a, b, x)
-    return a + x * (b - a)
-end
+-- local function lerp(a, b, x)
+--     return a + x * (b - a)
+-- end
 
-local function cantor_pair(a, b)
-    local hash_a = (a >= 0 and a * 2 or a * -2 - 1)
-    local hash_b = (b >= 0 and b * 2 or b * -2 - 1)
+-- local function cantor_pair(a, b)
+--     local hash_a = (a >= 0 and a * 2 or a * -2 - 1)
+--     local hash_b = (b >= 0 and b * 2 or b * -2 - 1)
 
-    local hash_c = ((hash_a >= hash_b) and hash_a ^ 2 + hash_a + hash_b or hash_a + hash_b ^ 2) / 2
+--     local hash_c = ((hash_a >= hash_b) and hash_a ^ 2 + hash_a + hash_b or hash_a + hash_b ^ 2) / 2
 
-    return (a < 0 and b < 0 or a >= 0 and b >= 0) and hash_c or -hash_c - 1
-end
+--     return (a < 0 and b < 0 or a >= 0 and b >= 0) and hash_c or -hash_c - 1
+-- end
 
 
-local function grad(map_seed, x, y, z)
-    return cantor_pair(map_seed, cantor_pair(x, y) + cantor_pair(x, z) + cantor_pair(y, z))
-end
+-- local function cantor_pair_gradient(map_seed, x, y, z)
+--     return cantor_pair(map_seed, cantor_pair(x, y) + cantor_pair(x, z) + cantor_pair(y, z))
+-- end
 
-local function perlin(seed, x, y, z)
-    if not y then
-        y = 1
+-- local function perlin(seed, x, y, z)
+--     if not y then
+--         y = 1
+--     end
+--     if not z then
+--         z = 1
+--     end
+--     if (_repeat > 0) then
+--         x, y, z = x % _repeat, y % _repeat, z % _repeat
+--     end
+--     local xi = math.floor(x) % 256
+--     local yi = math.floor(y) % 256
+--     local zi = math.floor(z) % 256
+--     local xf = x - math.floor(x)
+--     local yf = y - math.floor(y)
+--     local zf = z - math.floor(z)
+--     local u = fade(xf)
+--     local v = fade(yf)
+--     local w = fade(zf)
+--     local aaa = p[p[p[xi] + yi] + zi];
+--     local aba = p[p[p[xi] + increase(yi)] + zi];
+--     local aab = p[p[p[xi] + yi] + increase(zi)];
+--     local abb = p[p[p[xi] + increase(yi)] + increase(zi)];
+--     local baa = p[p[p[increase(xi)] + yi] + zi];
+--     local bba = p[p[p[increase(xi)] + increase(yi)] + zi];
+--     local bab = p[p[p[increase(xi)] + yi] + increase(zi)];
+--     local bbb = p[p[p[increase(xi)] + increase(yi)] + increase(zi)];
+--     local x1, x2, y1, y2
+--     if seed then
+--         x1 = lerp(cantor_pair_gradient(seed, xf, yf, zf),
+--             cantor_pair_gradient(seed, xf - 1, yf, zf),
+--             u);
+--         x2 = lerp(cantor_pair_gradient(seed, xf, yf - 1, zf),
+--             cantor_pair_gradient(seed, xf - 1, yf - 1, zf),
+--             u);
+--         y1 = lerp(x1, x2, v);
+
+--         x1 = lerp(cantor_pair_gradient(seed, xf, yf, zf - 1),
+--             cantor_pair_gradient(seed, xf - 1, yf, zf - 1),
+--             u);
+--         x2 = lerp(cantor_pair_gradient(seed, xf, yf - 1, zf - 1),
+--             cantor_pair_gradient(seed, xf - 1, yf - 1, zf - 1),
+--             u);
+--         y2 = lerp(x1, x2, v);
+--     else
+--         x1 = lerp(grad(aaa, xf, yf, zf),
+--             grad(baa, xf - 1, yf, zf),
+--             u);
+--         x2 = lerp(grad(aba, xf, yf - 1, zf),
+--             grad(bba, xf - 1, yf - 1, zf),
+--             u);
+--         y1 = lerp(x1, x2, v);
+
+--         x1 = lerp(grad(aab, xf, yf, zf - 1),
+--             grad(bab, xf - 1, yf, zf - 1),
+--             u);
+--         x2 = lerp(grad(abb, xf, yf - 1, zf - 1),
+--             grad(bbb, xf - 1, yf - 1, zf - 1),
+--             u);
+--         y2 = lerp(x1, x2, v);
+--     end
+--     return lerp(y1, y2, w)
+-- end
+
+local function interpolate(a0, a1, w)
+    if 0 > w then
+        return a0
+    elseif 1 < w then
+        return a1
     end
-    if not z then
-        z = 1
-    end
-    if (_repeat > 0) then
-        x, y, z = x % _repeat, y % _repeat, z % _repeat
-    end
-    local xi = bit.band(math.floor(x), 256)
-    local yi = bit.band(math.floor(y), 256)
-    local zi = bit.band(math.floor(z), 256)
-    local xf = x - math.floor(x)
-    local yf = y - math.floor(y)
-    local zf = z - math.floor(z)
-    local u = fade(xf)
-    local v = fade(yf)
-    local w = fade(zf)
-    local x1, x2, y1, y2
-    x1 = lerp(grad(seed, xf, yf, zf),
-        grad(seed, xf - 1, yf, zf),
-        u);
-    x2 = lerp(grad(seed, xf, yf - 1, zf),
-        grad(seed, xf - 1, yf - 1, zf),
-        u);
-    y1 = lerp(x1, x2, v);
-
-    x1 = lerp(grad(seed, xf, yf, zf - 1),
-        grad(seed, xf - 1, yf, zf - 1),
-        u);
-    x2 = lerp(grad(seed, xf, yf - 1, zf - 1),
-        grad(seed, xf - 1, yf - 1, zf - 1),
-        u);
-    y2 = lerp(x1, x2, v);
-
-    return lerp(y1, y2, w)
+    -- return (a1 - a0) * w + a0
+    --[[ Use this cubic interpolation [Smoothstep] instead, for a smooth appearance: ]]
+    -- return (a1 - a0) * (3.0 - w * 2.0)
+    -- Use [[Smootherstep]] for an even smoother result with a second derivative equal to zero on boundaries:
+    return (a1 - a0) * ((w * (w * 6.0 - 15.0) + 10.0) * w * w * w) + a0
 end
 
--- local function interpolate(a0, a1, w)
---     -- return (a1 - a0) * w + a0
---     --[[ Use this cubic interpolation [Smoothstep] instead, for a smooth appearance: ]]
---     -- return (a1 - a0) * (3.0 - w * 2.0) * w * w + a0;
---     -- Use [[Smootherstep]] for an even smoother result with a second derivative equal to zero on boundaries:
---     return (a1 - a0) * ((w * (w * 6.0 - 15.0) + 10.0) * w * w * w) + a0
--- end
+local function randomGradient(ix, iy)
+    local w = 8 * 32
+    local s = w / 2
+    local a = ix
+    local b = iy
+    a = a * 3284157443
+    b = bit.bxor(b, bit.bor(bit.blshift(a, s), bit.brshift(a, w - s)))
+    b = b * 1911520717
+    a = bit.bxor(a, bit.bor(bit.blshift(b, s), bit.brshift(b, w - s)))
+    a = a * 2048419325
+    local random = a * (math.pi / -9223372036854775808)
+    local v = { x = math.cos(random), y = math.sin(random) }
+    return v
+end
 
+local function dotGridGradient(ix, iy, x, y, seed)
+    local gradient = randomGradient(ix, iy)
+    local dx = x - ix
+    local dy = y - iy
+    return (dx * gradient.x + dy * gradient.y)
+end
 
--- local function cantor_pair(x, y)
---     return (x + y) * (x + y + 1) / 2 + y
--- end
+local function perlin2d(x, y, seed)
+    x, y = x + seed, y + seed
+    local x0 = math.floor(x)
+    local x1 = x0 + 1
+    local y0 = math.floor(y)
+    local y1 = y0 + 1
+    local sx = x - x0
+    local sy = y - y0
+    local n0, n1, ix0, ix1
+    n0 = dotGridGradient(x0, y0, x, y, seed)
+    n1 = dotGridGradient(x1, y0, x, y, seed)
+    ix0 = interpolate(n0, n1, sx)
+    n0 = dotGridGradient(x0, y1, x, y, seed)
+    n1 = dotGridGradient(x1, y1, x, y, seed)
+    ix1 = interpolate(n0, n1, sx)
+    return interpolate(ix0, ix1, sy)
+end
 
+local function perlin3d(x, y, z, seed)
+    x, y = x + seed, y + seed
+    local ab = perlin2d(x, y, seed)
+    local bc = perlin2d(y, z, seed)
+    local ac = perlin2d(x, z, seed)
 
--- local function randomGradient(ix, iy)
---     local w = 8 * 32
---     local s = w / 2
---     local a = ix
---     local b = iy
---     a = a * 3284157443
---     b = bxor(b, bor(blshift(a, s), brshift(a, w - s)))
---     b = b * 1911520717
---     a = bxor(a, bor(blshift(b, s), brshift(b, w - s)))
---     a = a * 2048419325
---     local random = a * (math.pi / -9223372036854775808)
---     local v = { x = math.cos(random), y = math.sin(random) }
---     return v
--- end
+    local ba = perlin2d(y, x, seed)
+    local cb = perlin2d(z, y, seed)
+    local ca = perlin2d(z, x, seed)
 
--- local function dotGridGradient(ix, iy, x, y, seed)
---     local gradient = randomGradient(ix, iy)
---     local dx = x - ix
---     local dy = y - iy
---     return (dx * gradient.x + dy * gradient.y)
--- end
-
--- local function perlin2d(x, y, seed)
---     local x0 = math.floor(x)
---     local x1 = x0 + 1
---     local y0 = math.floor(y)
---     local y1 = y0 + 1
---     local sx = x - x0
---     local sy = y - y0
---     local n0, n1, ix0, ix1
---     n0 = dotGridGradient(x0, y0, x, y, seed)
---     n1 = dotGridGradient(x1, y0, x, y, seed)
---     ix0 = interpolate(n0, n1, sx)
---     n0 = dotGridGradient(x0, y1, x, y, seed)
---     n1 = dotGridGradient(x1, y1, x, y, seed)
---     ix1 = interpolate(n0, n1, sx)
---     return interpolate(ix0, ix1, sy)
--- end
-
--- local function perlin3d(x, y, z, seed)
---     local ab = perlin2d(x, y, seed)
---     local bc = perlin2d(y, z, seed)
---     local ac = perlin2d(x, z, seed)
-
---     local ba = perlin2d(y, x, seed)
---     local cb = perlin2d(z, y, seed)
---     local ca = perlin2d(z, x, seed)
-
---     local abc = ab + bc + ac + ba + cb + ca
---     return abc / 6
--- end
+    local abc = ab + bc + ac + ba + cb + ca
+    return abc / 6
+end
 
 local function perlin_2d(x, y, scale, octaves, persistance, lacunarity, normalize, seed)
+    seed = seed and seed or math.random(1, 99999999)
     local value = 0
     local frequency = 1
     local amplitude = 1
     local max = 0
     for i = 1, octaves do
-        value = value + perlin(x * scale * frequency, y * scale * frequency, seed) * amplitude
+        value = value + perlin2d(x * scale * frequency, y * scale * frequency, seed) * amplitude
         max = max + amplitude
         amplitude = amplitude / persistance
         frequency = frequency * lacunarity
@@ -206,12 +233,13 @@ local function perlin_2d(x, y, scale, octaves, persistance, lacunarity, normaliz
 end
 
 local function perlin_3d(x, y, z, scale, octaves, persistance, lacunarity, normalize, seed)
+    seed = seed and seed or 1
     local value = 0
     local frequency = 1
     local amplitude = 1
     local max = 0
     for i = 1, octaves do
-        value = value + perlin(x * scale * frequency, y * scale * frequency, z * scale * frequency, seed) * amplitude
+        value = value + perlin3d(x * scale * frequency, y * scale * frequency, z * scale * frequency, seed) * amplitude
         max = max + amplitude
         amplitude = amplitude / persistance
         frequency = frequency * lacunarity
