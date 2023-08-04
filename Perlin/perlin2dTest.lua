@@ -31,14 +31,14 @@ local function parseArgs(arguments)
         print("yMovement: the y movement of the map")
         return false
     end
-    local size = tonumber(arguments[1]) or 25
-    local scale = tonumber(arguments[2]) or 0.0295843
-    local octaves = tonumber(arguments[3]) or 3
-    local persistance = tonumber(arguments[4]) or .5
-    local lacunarity = tonumber(arguments[5]) or 1.2568
-    local x = tonumber(arguments[6])
-    local y = tonumber(arguments[7])
-    local z = tonumber(arguments[8])
+    local x = tonumber(arguments[1])
+    local y = tonumber(arguments[2])
+    local z = tonumber(arguments[3])
+    local size = tonumber(arguments[4]) or 25
+    local scale = tonumber(arguments[5]) or 0.0295843
+    local octaves = tonumber(arguments[6]) or 3
+    local persistance = tonumber(arguments[7]) or .5
+    local lacunarity = tonumber(arguments[8]) or 1.2568
     local xMovement = tonumber(arguments[9]) or 0
     local zMovement = tonumber(arguments[10]) or 0
     if not x or not y then
@@ -118,10 +118,10 @@ for i = -size, size do
         table.insert(fun, function()
             local bool, err = commands.exec(command)
             if not bool then
-                print(err[1])
+                -- print(err[1])
             end
         end)
     end
 end
-run(fun)
 commands.exec(table.concat({ "say", "Finished:", scale, octaves, persistance, lacunarity }, " "))
+run(fun)
