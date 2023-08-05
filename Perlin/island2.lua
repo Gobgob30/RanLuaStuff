@@ -63,7 +63,6 @@ local function parseArgs(arguments)
     if not tonumber(arguments[1]) or not tonumber(arguments[2]) or not tonumber(arguments[3]) then
         return error(string.format("No coordinates provided %s %s %s", arguments[1], arguments[2], arguments[3]))
     end
-<<<<<<< HEAD
     return tonumber(arguments[4]) or 25,
         tonumber(arguments[5]) or .00354684,
         tonumber(arguments[6]) or 4,
@@ -125,44 +124,4 @@ f.close()
 --         end
 --     end
 -- end
-=======
-    return tonumber(arguments[4]) or 25, tonumber(arguments[5]) or 0.0295843, tonumber(arguments[6]) or 3, tonumber(arguments[7]) or .5, tonumber(arguments[8]) or 1.2568, tonumber(arguments[1]), tonumber(arguments[2]), tonumber(arguments[3])
-end
-
-local size, scale, octaves, persistance, lacunarity, x, y, z = parseArgs(args)
-local surfaceScale, surfacePer, surfaceLac, surfaceOct = scale, persistance, lacunarity, octaves
-local mapScale, mapPer, mapLac, mapOct = scale, persistance, lacunarity, octaves
-commands.say(string.format("Size: %d, Start x: %d y: %d z: %d End x: %d y: %d z: %d", size, x + size, y + size, z + size, x - size, y - size, z - size))
-local command = {}
-for i = -size, size do
-    for j = -size, size do
-        local height = math.floor(perlin.perlin_2d(i, j, mapScale, mapOct, mapPer, mapLac, true) * 25) + 10
-        local surface = math.floor(perlin.perlin_2d(i, j, surfaceScale, surfaceOct, surfacePer, surfaceLac, true) * 8)
-        local distance = math.sqrt(i ^ 2 + j ^ 2)
-        if distance <= size then
-            for k = -height, surface do
-                local block
-                local perlin3d = perlin.perlin_3d(i, k, j, scale, octaves, persistance, lacunarity, true)
-                if k == surface and perlin3d > 0 then
-                    block = "minecraft:grass_block"
-                elseif k > surface and perlin3d > 0 then
-                    block = "minecraft:dirt"
-                elseif perlin3d > 0 then
-                    block = "minecraft:stone"
-                else
-                    block = "minecraft:air"
-                end
-                -- if perlin.perlin_3d(i, k, j, scale, octaves, persistance, lacunarity, true) < 0 then
-                --     block = "minecraft:air"
-                -- end
-                table.insert(command, function()
-                    commands.setblock(x + i, y + k, z + j, block)
-                end)
-                yield()
-            end
-            -- commands.tp("Sea_of_the_Bass", i + x, y + 30, j + z)
-        end
-    end
-end
->>>>>>> 7d9945a7c3b903094f290e567626025768ecbbfa
 run(command)

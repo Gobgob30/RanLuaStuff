@@ -1,12 +1,8 @@
 local yieldTime                            -- variable to store the time of the last yield
-local yieldTime                            -- variable to store the time of the last yield
 function yield()
-    if yieldTime then                      -- check if it already yielded
     if yieldTime then                      -- check if it already yielded
         if os.clock() - yieldTime > 2 then -- if it were more than 2 seconds since the last yield
             os.queueEvent("someFakeEvent") -- queue the event
-            os.pullEvent("someFakeEvent")  -- pull it
-            yieldTime = nil                -- reset the counter
             os.pullEvent("someFakeEvent")  -- pull it
             yieldTime = nil                -- reset the counter
         end
@@ -43,14 +39,6 @@ local function parseArgs(arguments)
     local octaves = tonumber(arguments[6]) or 4
     local persistance = tonumber(arguments[7]) or .75
     local lacunarity = tonumber(arguments[8]) or 2
-    local x = tonumber(arguments[1])
-    local y = tonumber(arguments[2])
-    local z = tonumber(arguments[3])
-    local size = tonumber(arguments[4]) or 25
-    local scale = tonumber(arguments[5]) or 0.0295843
-    local octaves = tonumber(arguments[6]) or 3
-    local persistance = tonumber(arguments[7]) or .5
-    local lacunarity = tonumber(arguments[8]) or 1.2568
     local xMovement = tonumber(arguments[9]) or 0
     local zMovement = tonumber(arguments[10]) or 0
     if not x or not y then
@@ -62,7 +50,6 @@ end
 local perlin = require("perlin")
 local size, scale, octaves, persistance, lacunarity, x, y, z, xMovement, yMovement = parseArgs(args)
 if not size then return end
-local seed = math.random(100000, 999999)
 local seed = math.random(100000, 999999)
 local colors = {
     [0] = "minecraft:white_wool",
@@ -81,21 +68,6 @@ local colors = {
     [13] = "minecraft:green_wool",
     [14] = "minecraft:red_wool",
     [15] = "minecraft:black_wool",
-    [-1] = "minecraft:orange_concrete",
-    [-2] = "minecraft:magenta_concrete",
-    [-3] = "minecraft:light_blue_concrete",
-    [-4] = "minecraft:yellow_concrete",
-    [-5] = "minecraft:lime_concrete",
-    [-6] = "minecraft:pink_concrete",
-    [-7] = "minecraft:gray_concrete",
-    [-8] = "minecraft:light_gray_concrete",
-    [-9] = "minecraft:cyan_concrete",
-    [-10] = "minecraft:purple_concrete",
-    [-11] = "minecraft:blue_concrete",
-    [-12] = "minecraft:brown_concrete",
-    [-13] = "minecraft:green_concrete",
-    [-14] = "minecraft:red_concrete",
-    [-15] = "minecraft:black_concrete",
     [-1] = "minecraft:orange_concrete",
     [-2] = "minecraft:magenta_concrete",
     [-3] = "minecraft:light_blue_concrete",
@@ -133,47 +105,9 @@ for i = -size, size do
             local bool, err = commands.exec(command)
             if not bool then
                 -- print(err[1])
-local fun = {}
-local function run(run_table)
-    if #run_table > 64 * 1 then
-        local run_new_tbl = {}
-        for i = 1, 64 * 1 do
-            table.insert(run_new_tbl, table.remove(run_table, 1))
-        end
-        parallel.waitForAll(table.unpack(run_new_tbl))
-        return run(run_table)
-    else
-        parallel.waitForAll(table.unpack(run_table))
-    end
-end
-for i = -size, size do
-    for j = -size, size do
-        -- if map[i][j] > 0 then
-        --     local command = string.format("setblock %d %d %d %s", x + i, y, z + j, "stone")
-        --     local bool, err = commands.exec(command)
-        --     if not bool then
-        --         print(err[1])
-        --     end
-        -- else
-        --     local command = string.format("setblock %d %d %d %s", x + i, y, z + j, "air")
-        --     local bool, err = commands.exec(command)
-        --     if not bool then
-        --         print(err[1])
-        --     end
-        -- end
-        print(perlin.perlin_2d(i + xMovement, j + yMovement, scale, octaves, persistance, lacunarity, true, seed))
-        local color = colors[math.floor(perlin.perlin_2d(i + xMovement, j + yMovement, scale, octaves, persistance, lacunarity, true, seed) * 15)]
-        local command = string.format("setblock %d %d %d %s", x + i, y, z + j, color)
-        table.insert(fun, function()
-            local bool, err = commands.exec(command)
-            if not bool then
-                -- print(err[1])
             end
-        end)
-    end
         end)
     end
 end
 commands.exec(table.concat({ "say", "Finished:", scale, octaves, persistance, lacunarity }, " "))
-run(fun)
 run(fun)
