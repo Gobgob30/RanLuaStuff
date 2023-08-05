@@ -27,7 +27,7 @@ local c = {
     colors.pink
 }
 local box = pixelBox.new(term.current())
-local scale = .00354684
+local scale = 1
 local octaves = 2
 local persistence = .25
 local lacunarity = 2

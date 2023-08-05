@@ -40,13 +40,7 @@ local function check_if_updated(url)
         local commits = textutils.unserialiseJSON(responseData) -- Assuming you have a JSON decoding library
 
         if commits and #commits > 0 then
-            -- The first commit in the list will be the latest one affecting the file
             local latestCommitSha = commits[1].sha
-
-            -- Compare this commit SHA with the previously recorded one to check for updates
-            -- You need to have some mechanism to store and retrieve the previous commit SHA
-
-            -- If the SHAs are different, the file has been updated
             if latestCommitSha ~= settings.get("lastCommitSha", latestCommitSha) then
                 settings.set("lastCommitSha", latestCommitSha)
                 settings.save()
