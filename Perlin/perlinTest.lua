@@ -27,14 +27,14 @@ local c = {
     colors.pink
 }
 local box = pixelBox.new(term.current())
-local scale = .0354684
+local scale = .00354684
 local octaves = 2
-local persistence = .5
+local persistence = .25
 local lacunarity = 2
 local ran_seed = 1 or math.random(1, 100000)
 local function draw(xMovement, yMovement)
-    for i = 1, box.width * 2 - 3, 2 do
-        for j = 1, box.height * 3 - 3, 2 do
+    for i = 1, box.width * 2 - 1, 2 do
+        for j = 1, box.height * 3 - 1, 2 do
             local value
             if args[1] == "1" then
                 value = perlin.perlin_3d(i, j, yMovement, scale, octaves, persistence, lacunarity, ran_seed)
