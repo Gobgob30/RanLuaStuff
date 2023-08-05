@@ -1,10 +1,10 @@
-local yieldTime -- variable to store the time of the last yield
+local yieldTime                            -- variable to store the time of the last yield
 function yield()
-    if yieldTime then -- check if it already yielded
+    if yieldTime then                      -- check if it already yielded
         if os.clock() - yieldTime > 2 then -- if it were more than 2 seconds since the last yield
             os.queueEvent("someFakeEvent") -- queue the event
-            os.pullEvent("someFakeEvent") -- pull it
-            yieldTime = nil -- reset the counter
+            os.pullEvent("someFakeEvent")  -- pull it
+            yieldTime = nil                -- reset the counter
         end
     else
         yieldTime = os.clock() -- store the time
@@ -31,14 +31,14 @@ local function parseArgs(arguments)
         print("yMovement: the y movement of the map")
         return false
     end
-    local size = tonumber(arguments[1]) or 25
-    local scale = tonumber(arguments[2]) or 0.0295843
-    local octaves = tonumber(arguments[3]) or 3
-    local persistance = tonumber(arguments[4]) or .5
-    local lacunarity = tonumber(arguments[5]) or 1.2568
-    local x = tonumber(arguments[6])
-    local y = tonumber(arguments[7])
-    local z = tonumber(arguments[8])
+    local x = tonumber(arguments[1])
+    local y = tonumber(arguments[2])
+    local z = tonumber(arguments[3])
+    local size = tonumber(arguments[4]) or 25
+    local scale = tonumber(arguments[5]) or .000000234684
+    local octaves = tonumber(arguments[6]) or 4
+    local persistance = tonumber(arguments[7]) or .75
+    local lacunarity = tonumber(arguments[8]) or 2
     local xMovement = tonumber(arguments[9]) or 0
     local zMovement = tonumber(arguments[10]) or 0
     if not x or not y then
@@ -50,19 +50,7 @@ end
 local perlin = require("perlin")
 local size, scale, octaves, persistance, lacunarity, x, y, z, xMovement, yMovement = parseArgs(args)
 if not size then return end
--- local map = perlin.noise_octave_2d(true, size, size, scale, octaves, persistance, lacunarity, true, { x = xMovement, z = zMovement })
-local currCommands = 0
-local maxCommands = 50
-local oldExec = commands.exec
-commands.exec = function(command)
-    while currCommands >= maxCommands do
-        os.pullEvent("task_complete")
-    end
-    yield()
-    currCommands = currCommands + 1
-    return commands.execAsync(command)
-end
-print("Starting")
+local seed = math.random(100000, 999999)
 local colors = {
     [0] = "minecraft:white_wool",
     [1] = "minecraft:orange_wool",
@@ -80,51 +68,46 @@ local colors = {
     [13] = "minecraft:green_wool",
     [14] = "minecraft:red_wool",
     [15] = "minecraft:black_wool",
-    [ -1] = "minecraft:orange_concrete",
-    [ -2] = "minecraft:magenta_concrete",
-    [ -3] = "minecraft:light_blue_concrete",
-    [ -4] = "minecraft:yellow_concrete",
-    [ -5] = "minecraft:lime_concrete",
-    [ -6] = "minecraft:pink_concrete",
-    [ -7] = "minecraft:gray_concrete",
-    [ -8] = "minecraft:light_gray_concrete",
-    [ -9] = "minecraft:cyan_concrete",
-    [ -10] = "minecraft:purple_concrete",
-    [ -11] = "minecraft:blue_concrete",
-    [ -12] = "minecraft:brown_concrete",
-    [ -13] = "minecraft:green_concrete",
-    [ -14] = "minecraft:red_concrete",
-    [ -15] = "minecraft:black_concrete",
+    [-1] = "minecraft:orange_concrete",
+    [-2] = "minecraft:magenta_concrete",
+    [-3] = "minecraft:light_blue_concrete",
+    [-4] = "minecraft:yellow_concrete",
+    [-5] = "minecraft:lime_concrete",
+    [-6] = "minecraft:pink_concrete",
+    [-7] = "minecraft:gray_concrete",
+    [-8] = "minecraft:light_gray_concrete",
+    [-9] = "minecraft:cyan_concrete",
+    [-10] = "minecraft:purple_concrete",
+    [-11] = "minecraft:blue_concrete",
+    [-12] = "minecraft:brown_concrete",
+    [-13] = "minecraft:green_concrete",
+    [-14] = "minecraft:red_concrete",
+    [-15] = "minecraft:black_concrete",
 }
-local bool, err = pcall(parallel.waitForAny, function()
-        for i = -size, size do
-            for j = -size, size do
-                -- if map[i][j] > 0 then
-                --     local command = string.format("setblock %d %d %d %s", x + i, y, z + j, "stone")
-                --     local bool, err = commands.exec(command)
-                --     if not bool then
-                --         print(err[1])
-                --     end
-                -- else
-                --     local command = string.format("setblock %d %d %d %s", x + i, y, z + j, "air")
-                --     local bool, err = commands.exec(command)
-                --     if not bool then
-                --         print(err[1])
-                --     end
-                -- end
-                local color = colors[math.floor(perlin.perlin_2d(i + xMovement, j + yMovement, scale, octaves, persistance, lacunarity, true) * 15)]
-                local command = string.format("setblock %d %d %d %s", x + i, y, z + j, color)
-                local bool, err = commands.exec(command)
-            end
+local fun = {}
+local function run(run_table)
+    if #run_table > 64 * 1 then
+        local run_new_tbl = {}
+        for i = 1, 64 * 1 do
+            table.insert(run_new_tbl, table.remove(run_table, 1))
         end
-    end, function()
-        while true do
-            os.pullEvent("task_complete")
-            currCommands = currCommands - 1
-        end
-    end)
-if not bool and err ~= "Terminated" then
-    printError(err)
+        parallel.waitForAll(table.unpack(run_new_tbl))
+        return run(run_table)
+    else
+        parallel.waitForAll(table.unpack(run_table))
+    end
 end
-commands.exec = oldExec
+for i = -size, size do
+    for j = -size, size do
+        local color = colors[math.floor(perlin.helpers.map(perlin.perlin_2d(i + xMovement, j + yMovement, scale, octaves, persistance, lacunarity), -1, 1, 0, 3))]
+        local command = string.format("setblock %d %d %d %s", x + i, y, z + j, color)
+        table.insert(fun, function()
+            local bool, err = commands.exec(command)
+            if not bool then
+                -- print(err[1])
+            end
+        end)
+    end
+end
 commands.exec(table.concat({ "say", "Finished:", scale, octaves, persistance, lacunarity }, " "))
+run(fun)

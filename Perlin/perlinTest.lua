@@ -33,30 +33,33 @@ local c = {
     colors.pink
 }
 local box = pixelBox.new(term.current())
-local scale = .00354684
-local octaves = 5
+local scale = .0354684
+local octaves = 2
 local persistence = .5
 local lacunarity = 2
-local ranX, ranY = math.random(1, 100000), math.random(1, 100000)
+local ran_seed = 1 or math.random(1, 100000)
+commands.say(box.width * 2, box.height * 3)
 local function draw(xMovement, yMovement)
-    for i = 1, box.width * 2 do
+    for i = 1, 50, 2 do
         local shouldBreak = false
-        for j = 1, box.height * 3 do
+        for j = 1, 50, 2 do
+            local value
             if args[1] == "1" then
-                local value = perlin.perlin_3d(i + ranX, j + ranY, yMovement, .00354684, 5, 0.5, 2, true)
-                local a = math.floor(perlin.helpers.map(value, -1, 1, 1, #c))
-                box.CANVAS[j][i] = c[a]
+                value = perlin.perlin_3d(i, j, yMovement, scale, octaves, persistence, lacunarity, ran_seed)
             else
-                local value = perlin.perlin_2d(i + ranX, (j + yMovement) + ranY, .00354684, 5, 0.5, 2, true)
-                local a = math.floor(perlin.helpers.map(value, -1, 1, 1, #c))
-                box.CANVAS[j][i] = c[a]
+                value = perlin.perlin_2d(i + xMovement, j + yMovement, scale, octaves, persistence, lacunarity, ran_seed)
             end
+            box.CANVAS[j][i] = c[math.floor(perlin.helpers.map(value, -1, 1, 1, 6))]
+            box.CANVAS[j + 1][i] = c[math.floor(perlin.helpers.map(value, -1, 1, 1, 6))]
+            box.CANVAS[j + 1][i + 1] = c[math.floor(perlin.helpers.map(value, -1, 1, 1, 6))]
+            box.CANVAS[j][i + 1] = c[math.floor(perlin.helpers.map(value, -1, 1, 1, 6))]
         end
     end
-    box:render()
 end
 local yMovement = 0
+local xMovement = 0
 while true do
-    draw(0, yMovement)
+    draw(xMovement, yMovement)
     yMovement = yMovement + 1
+    -- xMovement = xMovement + 1
 end

@@ -1,13 +1,26 @@
-local yieldTime -- variable to store the time of the last yield
+local yieldTime                            -- variable to store the time of the last yield
 function yield()
-    if yieldTime then -- check if it already yielded
+    if yieldTime then                      -- check if it already yielded
         if os.clock() - yieldTime > 2 then -- if it were more than 2 seconds since the last yield
             os.queueEvent("someFakeEvent") -- queue the event
-            os.pullEvent("someFakeEvent") -- pull it
-            yieldTime = nil -- reset the counter
+            os.pullEvent("someFakeEvent")  -- pull it
+            yieldTime = nil                -- reset the counter
         end
     else
         yieldTime = os.clock() -- store the time
+    end
+end
+
+local function run(run_table)
+    if #run_table > 64 * 1 then
+        local run_new_tbl = {}
+        for i = 1, 64 * 1 do
+            table.insert(run_new_tbl, table.remove(run_table, 1))
+        end
+        parallel.waitForAll(table.unpack(run_new_tbl))
+        return run(run_table)
+    else
+        parallel.waitForAll(table.unpack(run_table))
     end
 end
 
@@ -24,7 +37,7 @@ local function ranNum(lower_bound, upper_bound)
 end
 
 local function help()
-    print("Usage: island2 <size> <scale> <octaves> <persistance> <lacunarity> <x> <y> <z> <xMovement> <yMovement>")
+    print("Usage: island2 <size> <scale> <octaves> <persistance> <lacunarity> <x> <y> <z>")
     print("size: the size of the map, default: 25")
     print("scale: the scale of the map, default: 0.0295843")
     print("octaves: the number of octaves, default: 3")
@@ -47,59 +60,68 @@ local function parseArgs(arguments)
     elseif arguments[1] == "help" then
         return help()
     end
-    local size = tonumber(arguments[1]) or 25
-    local scale = tonumber(arguments[2]) or 0.0295843
-    local octaves = tonumber(arguments[3]) or 3
-    local persistance = tonumber(arguments[4]) or .5
-    local lacunarity = tonumber(arguments[5]) or 1.2568
-    local x = tonumber(arguments[6])
-    local y = tonumber(arguments[7])
-    local z = tonumber(arguments[8])
-    if not x or not y or not z then
-        return error("No coordinates provided")
+    if not tonumber(arguments[1]) or not tonumber(arguments[2]) or not tonumber(arguments[3]) then
+        return error(string.format("No coordinates provided %s %s %s", arguments[1], arguments[2], arguments[3]))
     end
-    return size, scale, octaves, persistance, lacunarity, x, y, z
+    return tonumber(arguments[4]) or 25,
+        tonumber(arguments[5]) or .00354684,
+        tonumber(arguments[6]) or 4,
+        tonumber(arguments[7]) or .5,
+        tonumber(arguments[8]) or 2,
+        tonumber(arguments[1]),
+        tonumber(arguments[2]),
+        tonumber(arguments[3])
 end
 
 local size, scale, octaves, persistance, lacunarity, x, y, z = parseArgs(args)
-local mapScale, mapPer, mapLac, mapOct = scale * 2, persistance * 2, lacunarity * 2, octaves * 2
-local surfaceScale, surfacePer, surfaceLac, surfaceOct = scale, persistance, lacunarity, octaves
-local randomX, randomY, randomZ = ranNum(0, 100000), ranNum(0, 100000), ranNum(0, 100000)
-commands.exec(string.format('/tellraw Sea_of_the_Bass [{"text":"Starting at: ","color":"dark_blue","bold":true,"italic":true},{"text":"%d %d %d","clickEvent":{"action":"run_command","value":"/tp @s %d %d %d"}}]', x, y, z, x, y + 10, z))
-commands.exec(string.format("/tp Sea_of_the_Bass %d %d %d", x, y + 2.5, z))
-commands.exec(string.format("/execute positioned %d %d %d as @p[distance=..%d] at @s run tp @s ~ ~%d ~", x, y, z, size, size * 3))
-commands.say(string.format("Size: %d", size))
+print("size: " .. size .. ", scale: " .. scale .. ", octaves: " .. octaves .. ", persistance: " .. persistance .. ", lacunarity: " .. lacunarity .. ", x: " .. x .. ", y: " .. y .. ", z: " .. z)
+local command = { function() commands.say(string.format("fill %s %s %s %s %s %s air", x + size, y + size, z + size, x - size, y - size, z - size)) end }
 
+local blocks = {}
 for i = -size, size do
-    commands.tp("Sea_of_the_Bass", i + x, y + 30, z)
     for j = -size, size do
-        local height = math.floor(perlin.perlin_2d(i + randomX, j + randomY, mapScale, mapOct, mapPer, mapLac, true) * 25) + 10
-        local surface = math.floor(perlin.perlin_2d(i + randomX, j + randomY, surfaceScale, surfaceOct, surfacePer, surfaceLac, true) * 8)
-        local distance = math.sqrt(i ^ 2 + j ^ 2)
-        -- print(i, j, height, surface)
-        if distance <= size then
-            local _command = {}
-            for k = -height, surface + 3 do
-                local block
-                if k == surface + 3 then
-                    block = "minecraft:grass_block"
-                elseif k > surface then
-                    block = "minecraft:dirt"
-                else
-                    block = "minecraft:stone"
-                end
-                -- print(perlin.perlin_3d(i + randomX, k + randomZ, j + randomY, ranNum(.05, .000001), 2, ranNum(.25, .875), ranNum(0, 10), true))
-                if perlin.perlin_3d(i + randomX, k + randomZ, j + randomY, scale, octaves, persistance, lacunarity, true) < 0 then
-                    block = "minecraft:air"
-                end
-                -- write(block .. " ")
-                table.insert(_command, function()
-                    commands.exec(string.format("/setblock %d %d %d %s", i + x, k + y, j + z, block))
-                end)
-                yield()
-            end
-            -- commands.tp("Sea_of_the_Bass", i + x, y + 30, j + z)
-            parallel.waitForAll(table.unpack(_command))
-        end
+        local height = math.floor(perlin.helpers.map(perlin.perlin_2d(i, j, scale, octaves, persistance, lacunarity), -1, 1, 1, 25))
+        local surface = math.floor(perlin.helpers.map(perlin.perlin_2d(i, j, scale, octaves, persistance, lacunarity), -1, 1, 1, 6))
+        table.insert(blocks, { height = height, surface = surface })
+        -- local distance = math.sqrt(i ^ 2 + j ^ 2)
+        -- if distance <= size then
+        --     for k = -height, surface do
+        --         -- if perlin.perlin_3d(i, k, j, scale / 100000, octaves, persistance, lacunarity) > 0 then
+        --         blocks[x + i] = blocks[x + i] or {}
+        --         blocks[x + i][y + k] = blocks[x + i][y + k] or {}
+        --         blocks[x + i][y + k][z + j] = blocks[x + i][y + k][z + j] or true
+        --         yield()
+        --         -- end
+        --     end
+        -- end
     end
 end
+local f = fs.open("perl.json", "w")
+f.write(json.encode(blocks))
+f.close()
+-- for i = -size, size do
+--     for k = -size, size do
+--         local has_grassed = false
+--         local dirts = 0
+--         for j = size, -size, -1 do
+--             if blocks[x + i] and blocks[x + i][y + j] and blocks[x + i][y + j][z + k] then
+--                 if not has_grassed then
+--                     has_grassed = true
+--                     table.insert(command, function()
+--                         commands.setblock(x + i, y + j, z + k, "minecraft:grass_block")
+--                     end)
+--                 elseif has_grassed and dirts < 3 then
+--                     table.insert(command, function()
+--                         commands.setblock(x + i, y + j, z + k, "minecraft:dirt")
+--                     end)
+--                     dirts = dirts + 1
+--                 else
+--                     table.insert(command, function()
+--                         commands.setblock(x + i, y + j, z + k, "minecraft:stone")
+--                     end)
+--                 end
+--             end
+--         end
+--     end
+-- end
+run(command)
