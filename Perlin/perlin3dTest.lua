@@ -33,7 +33,7 @@ local function parseArgs(arguments)
         return false
     end
     local size = tonumber(arguments[1]) or 25
-    local scale = tonumber(arguments[2]) or 0.0295843
+    local scale = tonumber(arguments[2]) or 25
     local octaves = tonumber(arguments[3]) or 3
     local persistance = tonumber(arguments[4]) or .5
     local lacunarity = tonumber(arguments[5]) or 1.2568

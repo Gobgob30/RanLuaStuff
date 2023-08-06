@@ -6,8 +6,23 @@ if not has_gitChecker then
         error("Failed to load gitChecker\n" .. tostring(gitChecker))
     end
 end
-local pixelBox = gitChecker.get_module("https://raw.githubusercontent.com/9551-Dev/apis/main/pixelbox_lite.lua", "pixelBox.lua")
-local perlin = gitChecker.get_module("https://raw.githubusercontent.com/Gobgob30/RanLuaStuff/main/Perlin/perlin.lua", "perlin.lua")
+local hasPixelBox, pixelBox = pcall(require, "pixelBox")
+if not hasPixelBox then
+    shell.run("wget", "https://raw.githubusercontent.com/9551-Dev/apis/main/pixelbox_lite.lua", "pixelBox.lua")
+    hasPixelBox, pixelBox = pcall(require, "pixelBox")
+    if not hasPixelBox then
+        error("Failed to load pixelBox\n" .. tostring(pixelBox))
+    end
+end
+local hasPerlin, perlin = pcall(require, "perlin")
+if not hasPerlin then
+    shell.run("wget", "https://raw.githubusercontent.com/Gobgob30/RanLuaStuff/main/perlin.lua", "perlin.lua")
+    hasPerlin, perlin = pcall(require, "perlin")
+    if not hasPerlin then
+        error("Failed to load pearlin\n" .. tostring(perlin))
+    end
+end
+
 local args = { ... }
 local c = {
     colors.white,
@@ -27,24 +42,20 @@ local c = {
     colors.pink
 }
 local box = pixelBox.new(term.current())
-local scale = 1
+local scale = 25
 local octaves = 2
 local persistence = .25
 local lacunarity = 2
-local ran_seed = 1 or math.random(1, 100000)
 local function draw(xMovement, yMovement)
-    for i = 1, box.width * 2 - 1, 2 do
-        for j = 1, box.height * 3 - 1, 2 do
+    for i = 1, box.width * 2 do
+        for j = 1, box.height * 3 do
             local value
             if args[1] == "1" then
-                value = perlin.perlin_3d(i, j, yMovement, scale, octaves, persistence, lacunarity, ran_seed)
+                value = perlin.perlin_3d(i, j, yMovement, scale, octaves, persistence, lacunarity)
             else
-                value = perlin.perlin_2d(i + xMovement, j + yMovement, scale, octaves, persistence, lacunarity, ran_seed)
+                value = perlin.perlin_2d(i + xMovement, j + yMovement, scale, octaves, persistence, lacunarity)
             end
-            box.CANVAS[j][i] = c[math.floor(perlin.helpers.map(value, -1, 1, 1, 6))]
-            box.CANVAS[j + 1][i] = c[math.floor(perlin.helpers.map(value, -1, 1, 1, 6))]
-            box.CANVAS[j + 1][i + 1] = c[math.floor(perlin.helpers.map(value, -1, 1, 1, 6))]
-            box.CANVAS[j][i + 1] = c[math.floor(perlin.helpers.map(value, -1, 1, 1, 6))]
+            box.CANVAS[j][i] = c[math.floor(perlin.helpers.map(value, -1, 1, 1, 15))]
         end
         box:render()
     end

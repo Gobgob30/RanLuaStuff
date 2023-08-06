@@ -95,42 +95,26 @@ local function noise(x, y, z)
         lerp(v, lerp(u, k5, k6), lerp(u, k7, k8)))
 end
 
-local function perlin_2d(x, y, scale, octaves, persistance, lacunarity, normalize, seed)
-    seed = seed and seed or math.random(1, 99999999)
+local function perlin_3d(x, y, z, scale, octaves, persistance, lacunarity, seed)
+    seed = seed or 1
+    local xs, ys, zs = x / scale * seed, y / scale * seed, z / scale * seed
+    persistance = 2.0 ^ -persistance
     local value = 0
     local frequency = 1
     local amplitude = 1
     local max = 0
     for i = 1, octaves do
-        value = value + noise(x * scale * frequency, y * scale * frequency, seed) * amplitude
+        value = value + noise(xs * frequency, ys * frequency, zs * frequency) * amplitude
         max = max + amplitude
         amplitude = amplitude * persistance
         frequency = frequency * lacunarity
         yield()
     end
-    if normalize then
-        value = value / max
-    end
-    return value
+    return value / max
 end
 
-local function perlin_3d(x, y, z, scale, octaves, persistance, lacunarity, normalize, seed)
-    seed = seed and seed or 1
-    local value = 0
-    local frequency = 1
-    local amplitude = 1
-    local max = 0
-    for i = 1, octaves do
-        value = value + noise(x * scale * frequency, y * scale * frequency, z * scale * frequency, seed) * amplitude
-        max = max + amplitude
-        amplitude = amplitude * persistance
-        frequency = frequency * lacunarity
-        yield()
-    end
-    if normalize then
-        value = value / max
-    end
-    return value
+local function perlin_2d(x, y, scale, octaves, persistance, lacunarity, seed)
+    return perlin_3d(x, y, seed, scale, octaves, persistance, lacunarity, seed)
 end
 
 function map(value, fromLow, fromHigh, toLow, toHigh)

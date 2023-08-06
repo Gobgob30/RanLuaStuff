@@ -35,9 +35,9 @@ local function parseArgs(arguments)
     local y = tonumber(arguments[2])
     local z = tonumber(arguments[3])
     local size = tonumber(arguments[4]) or 25
-    local scale = tonumber(arguments[5]) or .000000234684
+    local scale = tonumber(arguments[5]) or 25
     local octaves = tonumber(arguments[6]) or 4
-    local persistance = tonumber(arguments[7]) or .75
+    local persistance = tonumber(arguments[7]) or .8
     local lacunarity = tonumber(arguments[8]) or 2
     local xMovement = tonumber(arguments[9]) or 0
     local zMovement = tonumber(arguments[10]) or 0

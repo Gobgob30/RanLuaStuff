@@ -10,9 +10,8 @@ local function parseGitHubUrl(url)
     for part in cleanedUrl:gmatch("[^/]+") do
         table.insert(parts, part)
     end
-
     -- Check if the URL matches the GitHub repository pattern
-    if #parts >= 2 and (parts[1] and parts[1]:find("github.com")) then
+    if #parts >= 2 and (parts[1] and parts[1]:find("github")) then
         repoOwner = parts[2]
         repoName = parts[3]
 
@@ -28,12 +27,12 @@ end
 local function check_if_updated(url)
     local repoOwner, repoName, filePath = parseGitHubUrl(url)
     if not repoOwner or not repoName or not filePath then
-        return false, "Failed to parse GitHub URL.\n" .. tostring(url)
+        return false, "Failed to parse GitHub URL.\n" .. tostring(url) .. "\n" .. tostring(repoOwner) .. "\n" .. tostring(repoName) .. "\n" .. tostring(filePath)
     end
     local githubApiUrl = "https://api.github.com/repos/" .. repoOwner .. "/" .. repoName .. "/commits?path=" .. filePath
 
     -- Make a GET request to the GitHub API to retrieve commit history for the file
-    local response = http.get(githubApiUrl)
+    local response, err = http.get(githubApiUrl, { headers = { ["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.207.132.170 Safari/537.36" } })
 
     if response and response.getResponseCode() == 200 then
         local responseData = response.readAll()                 -- Read the response data
@@ -41,18 +40,20 @@ local function check_if_updated(url)
 
         if commits and #commits > 0 then
             local latestCommitSha = commits[1].sha
-            if latestCommitSha ~= settings.get("lastCommitSha", latestCommitSha) then
+            if latestCommitSha ~= settings.get(repoOwner .. "/" .. repoName .. "/" .. filePath) then
                 settings.set("lastCommitSha", latestCommitSha)
                 settings.save()
                 return true
             else
                 return false, "NO CHANGE"
             end
+        elseif commits and #commits == 0 then
+            return true
         else
-            return false, "Failed to retrieve commit history."
+            return false, table.concat({ tostring(err), tostring(commits) }, "\n")
         end
     else
-        return false, "Failed to retrieve commit history."
+        return false, err
     end
 end
 
@@ -72,16 +73,13 @@ local function get_module(url, name)
         end
         return_module_bool, return_module = pcall(require, shell.dir() .. name:gsub("%.lua$", ""))
         if not return_module_bool then
-            err("Failed to load " .. name .. "\n" .. tostring(return_module))
+            error("Failed to load " .. name .. "\n" .. tostring(return_module), 2)
         end
     else
-        error(error, 2)
+        print(err)
+        error(err, 2)
     end
     return return_module
-end
-
-if #args > 0 then
-    return get_module(args[1], args[2])
 end
 
 return {
