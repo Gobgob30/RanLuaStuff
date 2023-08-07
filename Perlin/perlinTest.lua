@@ -1,11 +1,3 @@
-local has_gitChecker, gitChecker = pcall(require, "gitChecker")
-if not has_gitChecker then
-    shell.run("wget", "https://raw.githubusercontent.com/Gobgob30/RanLuaStuff/main/gitChecker.lua", "gitChecker.lua")
-    has_gitChecker, gitChecker = pcall(require, "gitChecker")
-    if not has_gitChecker then
-        error("Failed to load gitChecker\n" .. tostring(gitChecker))
-    end
-end
 local hasPixelBox, pixelBox = pcall(require, "pixelBox")
 if not hasPixelBox then
     shell.run("wget", "https://raw.githubusercontent.com/9551-Dev/apis/main/pixelbox_lite.lua", "pixelBox.lua")
