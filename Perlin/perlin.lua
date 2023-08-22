@@ -83,6 +83,10 @@ local function noise(x, y, z)
 end
 
 local function perlin_3d(x, y, z, scale, octaves, persistance, lacunarity)
+    scale = scale or 25
+    octaves = octaves or 2
+    persistance = persistance or 0.5
+    lacunarity = lacunarity or 2
     local xs, ys, zs = x / scale, y / scale, z / scale
     persistance = 2.0 ^ -persistance
     local value = 0

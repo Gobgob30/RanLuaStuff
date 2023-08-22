@@ -58,7 +58,4 @@ while true do
     draw(xMovement, yMovement)
     yMovement = yMovement + 1
     -- xMovement = xMovement + 1
-    if yMovement % 25 == 0 then
-        perlin.set_seed(math.random(9999, 99999))
-    end
 end
