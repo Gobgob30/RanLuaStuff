@@ -111,9 +111,7 @@ local function perlin(x, scale, octaves, persistance, lacunarity)
     return perlin_2d(x, 1, scale, octaves, persistance, lacunarity)
 end
 
-function map(value, fromLow, fromHigh, toLow, toHigh)
-    return (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow
-end
+local function map(value, fromLow, fromHigh, toLow, toHigh) return toLow + (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) end
 
 return {
     set_seed = set_seed,
