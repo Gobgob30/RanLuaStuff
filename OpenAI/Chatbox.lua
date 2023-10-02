@@ -20,7 +20,7 @@ while true do
         }
     else
         table.insert(messages, openAI.chat:generate_message(message))
-        local ret, err = openAI.chat:generate_response(openAI.chat.models["gpt-3.5-turbo"], messages, nil, nil, 1.5)
+        local ret, err = openAI.chat:generate_response(openAI.chat.models["gpt-3.5-turbo"], messages, nil, nil,nil, )
         if not ret then
             print(err)
         else
@@ -33,6 +33,7 @@ while true do
                 end
                 sleep(1)
             end
+            os.setComputerLabel()
         end
     end
 end
