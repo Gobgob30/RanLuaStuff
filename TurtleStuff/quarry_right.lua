@@ -131,7 +131,7 @@ local STATETABLE = {
         settings.save()
     end,
     function()
-        local slot = find("advanced_alchemical_chest")
+        local slot = find("advanced_alchemical_chest") or find("stable_wormhole")
         if slot then
             turtle.select(slot)
             turtle.placeDown()

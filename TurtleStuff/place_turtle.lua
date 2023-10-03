@@ -29,8 +29,11 @@ local function refuel(has_no_fuel)
 end
 
 local black_list = {
+    ["turtle"] = true,
     ["advanced_alchemical_chest"] = true,
+    ["stable_wormhole"] = true,
     ["fuel"] = true,
+    ["coal"] = true,
     ["disk_drive"] = true,
 }
 local function check_inventory()
@@ -44,9 +47,17 @@ local function check_inventory()
     if amount >= 14 then
         for i = 1, 16 do
             local item = turtle.getItemDetail(i)
-            if item and not black_list[item.name] then
-                turtle.select(i)
-                turtle.dropDown()
+            if item then
+                local drop = true
+                for k, v in pairs(black_list) do
+                    if item.name:find(k) then
+                        drop = false
+                    end
+                end
+                if drop then
+                    turtle.select(i)
+                    turtle.dropDown()
+                end
             end
         end
     end
@@ -86,15 +97,15 @@ for i = 1, 8 do
                     fs.delete(fs.combine(peripheral.call("top", "getMountPath"), ".settings"))
                     turtle.digUp()
                     turtle.placeUp()
-                    local advanced_alchemical_chest = turtle:find("advanced_alchemical_chest")
-                    if advanced_alchemical_chest then
-                        turtle.select(advanced_alchemical_chest)
+                    local output = turtle:find("advanced_alchemical_chest") or turtle:find("stable_wormhole")
+                    if output then
+                        turtle.select(output)
                         turtle.dropUp(1)
                     end
-                    local fuel = turtle:find("fuel")
+                    local fuel = turtle:find("fuel") or turtle:find("coal")
                     if fuel then
                         turtle.select(fuel)
-                        turtle.dropUp(3)
+                        turtle.dropUp(32)
                     end
                     peripheral.call("top", "turnOn")
                     turtle.turnRight()
