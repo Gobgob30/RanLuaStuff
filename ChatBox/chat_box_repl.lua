@@ -41,8 +41,9 @@ while true do
         settings.set("owner_id", owner_id)
         settings.save()
         commands.tellraw(username, { text = "Registered as " .. owner_id, color = "green" })
-    end
-    if uuid == owner_id then
+    elseif not owner_id then
+        commands.tellraw(username, { text = "Please register first", color = "red" })
+    elseif uuid == owner_id then
         local args = {}
         for arg in message:gmatch("%S+") do
             table.insert(args, arg)
