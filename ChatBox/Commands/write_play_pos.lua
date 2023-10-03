@@ -1,0 +1,11 @@
+local _, _, x = commands.data.get.entity("Sea_of_the_Bass", "Pos[0]")
+local _, _, y = commands.data.get.entity("Sea_of_the_Bass", "Pos[1]")
+local _, _, z = commands.data.get.entity("Sea_of_the_Bass", "Pos[2]")
+commands.say(x, y, z)
+local f_r = fs.open("Sea_of_the_Bass", "r")
+local data = textutils.unserialise(f_r.readAll()) or {}
+f_r.close()
+table.insert(data, vector.new(x, y, z))
+local f = fs.open("Sea_of_the_Bass", "w")
+f.write(textutils.serialise(data))
+f.close()
