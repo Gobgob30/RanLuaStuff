@@ -6,12 +6,14 @@ local function refuel(has_no_fuel)
     end
     for i = 1, 16 do
         local item = turtle.getItemDetail(i)
-        turtle.select(i)
-        if turtle.refuel() and turtle.getFuelLevel() > turtle.getFuelLimit() / 2 then
-            fuel_items[item.name] = true
-            settings.set("fuel_items", fuel_items)
-            settings.save()
-            return not has_no_fuel
+        if item then
+            turtle.select(i)
+            if turtle.refuel() and turtle.getFuelLevel() > turtle.getFuelLimit() / 2 then
+                fuel_items[item.name] = true
+                settings.set("fuel_items", fuel_items)
+                settings.save()
+                return not has_no_fuel
+            end
         end
     end
     return refuel(true)
@@ -45,6 +47,7 @@ settings.save()
 local break_k, move_k, y
 local STATETABLE = {
     function()
+        refuel()
         if check_inventory(14) then
             STATE = 4
             settings.set("state", STATE)
@@ -84,12 +87,7 @@ local STATETABLE = {
         while turtle.digDown() do
         end
         if not turtle.down() then
-            if refuel() then
-                STATE = 3
-                settings.set("state", STATE)
-                settings.save()
-                return
-            elseif not turtle.down() then
+            if not turtle.down() then
                 STATE = 3
                 settings.set("state", STATE)
                 settings.save()
@@ -157,7 +155,7 @@ local STATETABLE = {
     end
 }
 
-sleep(1)
+sleep(10)
 while true do
     STATETABLE[STATE]()
 end

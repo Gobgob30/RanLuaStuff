@@ -17,12 +17,14 @@ local function refuel(has_no_fuel)
     end
     for i = 1, 16 do
         local item = turtle.getItemDetail(i)
-        turtle.select(i)
-        if turtle.refuel() and turtle.getFuelLevel() > turtle.getFuelLimit() / 2 then
-            fuel_items[item.name] = true
-            settings.set("fuel_items", fuel_items)
-            settings.save()
-            return not has_no_fuel
+        if item then
+            turtle.select(i)
+            if turtle.refuel() and turtle.getFuelLevel() > turtle.getFuelLimit() / 2 then
+                fuel_items[item.name] = true
+                settings.set("fuel_items", fuel_items)
+                settings.save()
+                return not has_no_fuel
+            end
         end
     end
     return refuel(true)
@@ -34,6 +36,7 @@ local black_list = {
     ["stable_wormhole"] = true,
     ["fuel"] = true,
     ["coal"] = true,
+    ["blaze_cake"] = true,
     ["disk_drive"] = true,
 }
 local function check_inventory()
@@ -84,46 +87,47 @@ for i = 1, 8 do
                 local drive = turtle:find("disk_drive")
                 if drive then
                     turtle.select(drive)
-                    turtle.placeUp()
-                    turtle.select(other_turtle_slot or turtle_slot)
-                    turtle.dropUp(1)
-                    peripheral.wrap("top")
-                    local data = fs.open("quarry_right.lua", "r")
-                    local code = data.readAll()
-                    data.close()
-                    data = fs.open(fs.combine(peripheral.call("top", "getMountPath"), "startup.lua"), "w")
-                    data.write(code)
-                    data.close()
-                    fs.delete(fs.combine(peripheral.call("top", "getMountPath"), ".settings"))
-                    turtle.digUp()
-                    turtle.placeUp()
-                    local output = turtle:find("advanced_alchemical_chest") or turtle:find("stable_wormhole")
-                    if output then
-                        turtle.select(output)
+                    if turtle.placeUp() then
+                        turtle.select(other_turtle_slot or turtle_slot)
                         turtle.dropUp(1)
-                    end
-                    local fuel = turtle:find("fuel") or turtle:find("coal")
-                    if fuel then
-                        turtle.select(fuel)
-                        turtle.dropUp(32)
-                    end
-                    peripheral.call("top", "turnOn")
-                    turtle.turnRight()
-                    for ii = 1, 16 do
-                        check_inventory()
-                        while turtle.dig() do
-                            turtle.digDown()
+                        peripheral.wrap("top")
+                        local data = fs.open("quarry_right.lua", "r")
+                        local code = data.readAll()
+                        data.close()
+                        data = fs.open(fs.combine(peripheral.call("top", "getMountPath"), "startup.lua"), "w")
+                        data.write(code)
+                        data.close()
+                        fs.delete(fs.combine(peripheral.call("top", "getMountPath"), ".settings"))
+                        turtle.digUp()
+                        turtle.placeUp()
+                        local output = turtle:find("advanced_alchemical_chest") or turtle:find("stable_wormhole")
+                        if output then
+                            turtle.select(output)
+                            turtle.dropUp(1)
                         end
-                        if not turtle.forward() then
-                            if not refuel() then
-                                turtle.forward()
-                            end
+                        local fuel = turtle:find("fuel") or turtle:find("coal") or turtle:find("blaze_cake")
+                        if fuel then
+                            turtle.select(fuel)
+                            turtle.dropUp(16)
                         end
+                        peripheral.call("top", "turnOn")
                     end
-                    turtle.turnLeft()
                 end
             end
         end
+        turtle.turnRight()
+        for ii = 1, 16 do
+            check_inventory()
+            while turtle.dig() do
+                turtle.digDown()
+            end
+            if not turtle.forward() then
+                if not refuel() then
+                    turtle.forward()
+                end
+            end
+        end
+        turtle.turnLeft()
     end
     turtle.turnRight()
     turtle.turnRight()
