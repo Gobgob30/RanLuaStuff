@@ -3,7 +3,7 @@ name: Build and Publish
 on:
   push:
     branches:
-      - main  # Adjust this to your branch name
+      - main # Adjust this to your branch name
 
 jobs:
   build:
@@ -33,12 +33,23 @@ jobs:
             fi
           done
 
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
       - name: Upload Release Assets
         id: upload_release_asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ github.event.repository.releases[0].upload_url }}
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./bin/*
-          asset_name: your-desired-asset-name.zip 
+          asset_name: your-desired-asset-name.zip
