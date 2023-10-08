@@ -39,6 +39,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ github.event.repository.releases[0].upload_url }}
           asset_path: ./bin/*
           asset_name: your-desired-asset-name.zip 
