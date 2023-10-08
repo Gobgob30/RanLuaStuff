@@ -20,7 +20,9 @@ jobs:
           sudo apt -y install craftos-pc
 
       - name: Clone repository
-        run: git clone git@github.com:Gobgob30/RanLuaStuff.git
+        run: git clone https://github.com/Gobgob30/RanLuaStuff.git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and publish
         run: |
