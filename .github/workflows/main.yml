@@ -29,7 +29,9 @@ jobs:
         run: |
           mkdir bin
           cd RanLuaStuff  # Change to your repository directory
+          ls
           for folder in */; do
+            ls "$folder"
             if [ -f "$folder/init.lua" ]; then
               echo "Publishing $folder"
               craft-os -c --mount-rw .="$folder" --mount-rw ./bin="../bin" --script "pastebin run 35C8TNCZ source:'$folder/init.lua' destination:'bin/$folder'" add_wget_and_pastebin_support:true rewrite:true allow_bad_compression_results:true
