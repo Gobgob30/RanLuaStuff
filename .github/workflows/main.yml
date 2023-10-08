@@ -27,6 +27,7 @@ jobs:
 
       - name: Build and publish
         run: |
+          mkdir bin
           cd RanLuaStuff  # Change to your repository directory
           for folder in */; do
             if [ -f "$folder/init.lua" ]; then
