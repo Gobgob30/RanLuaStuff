@@ -31,12 +31,12 @@ jobs:
           cd RanLuaStuff  # Change to your repository directory
           for folder in */; do
             if [ -f "$folder/init.lua" ]; then
-              craft-os --mount-rw .="$folder" --mount-rw ./bin="../bin" --script "pastebin run 35C8TNCZ source:'$folder/init.lua' destination:'bin/$folder'" add_wget_and_pastebin_support:true rewrite:true allow_bad_compression_results:true
+              craft-os -c --mount-rw .="$folder" --mount-rw ./bin="../bin" --script "pastebin run 35C8TNCZ source:'$folder/init.lua' destination:'bin/$folder'" add_wget_and_pastebin_support:true rewrite:true allow_bad_compression_results:true
             fi
           done
 
       - name: debug-bin
-        run: ls ..
+        run: ls ../bin
 
       - name: debug-RanLuaStuff
         run: ls
@@ -48,7 +48,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          release_name: ${{ steps.version.outputs.version }}
           draft: false
           prerelease: false
 
