@@ -35,10 +35,10 @@ jobs:
           done
 
       - name: debug-bin
-        run: ls
+        run: ls ../bin
 
       - name: debug-RanLuaStuff
-        run: ls RanLuaStuff
+        run: ls
 
       - name: Create Release
         id: create_release
