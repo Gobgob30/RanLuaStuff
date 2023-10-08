@@ -34,6 +34,7 @@ jobs:
               craft-os -c --mount-rw .="$folder" --mount-rw ./bin="../bin" --script "pastebin run 35C8TNCZ source:'$folder/init.lua' destination:'bin/$folder'" add_wget_and_pastebin_support:true rewrite:true allow_bad_compression_results:true
             fi
           done
+          wait
 
       - name: debug-bin
         run: ls ..
