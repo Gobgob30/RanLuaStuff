@@ -1,3 +1,6 @@
 [submodule "Chat_Speaker"]
 	path = Chat_Speaker
 	url = https://github.com/Gobgob30/Chat_Speaker
+[submodule "VRCX/vrc_lib"]
+	path = VRCX/vrc_lib
+	url = git@github.com:Gobgob30/VRC_lua_library.git
