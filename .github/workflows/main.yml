@@ -27,8 +27,8 @@ jobs:
 
       - name: Build and publish
         run: |
-          mkdir bin
           cd RanLuaStuff/VRCX  # Change to your repository directory
+          mkdir ../bin
           # craftos -c --mount-rw .="." --mount-rw ./bin="../bin" --script "pastebin" --args "run 35C8TNCZ 'vrcx.lua' destination:'bin/vrcx.lua add_wget_and_pastebin_support:true rewrite:true allow_bad_compression_results:true"
           craftos --mount-rw .="." --mount-rw ./bin="../bin" --exec "shell.run('pastebin run 35C8TNCZ \'vrcx.lua\' \'bin/vrcx.lua\' add_wget_and_pastebin_support:true rewrite:true allow_bad_compression_results:true')"
 
