@@ -30,7 +30,6 @@ jobs:
           mkdir bin
           cd RanLuaStuff/VRCX  # Change to your repository directory
           craftos -c --mount-rw .="." --mount-rw ./bin="../bin" --script "pastebin run 35C8TNCZ source:'vrcx.lua' destination:'bin/vrcx.lua" add_wget_and_pastebin_support:true rewrite:true allow_bad_compression_results:true
-          done
 
       - name: debug-bin
         run: ls ..
