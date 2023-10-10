@@ -31,7 +31,7 @@ jobs:
           mkdir ../bin
           # craftos -c --mount-rw .="." --mount-rw ./bin="../bin" --script "pastebin" --args "run 35C8TNCZ 'vrcx.lua' destination:'bin/vrcx.lua add_wget_and_pastebin_support:true rewrite:true allow_bad_compression_results:true"
           # craftos --mount-rw .="." --mount-rw ./bin="../bin" --exec "shell.run('pastebin run 35C8TNCZ \'vrcx.lua\' \'bin/vrcx.lua\' add_wget_and_pastebin_support:true rewrite:true allow_bad_compression_results:true')"
-          craftos --mount-rw .="." --mount-rw ./bin="../bin" --exec "shell.run('pastebin run NJCdnEXT -S=\"startup/lzssepm.lua\" -P=\"lss/lzssepm.lua\"') shell.run('lzssepm \'vrcx.lua\' \'bin/vrcx.lua\' true true true')"
+          craftos --mount-rw .="." --mount-rw ./bin="../bin" --exec "shell.run('pastebin run NJCdnEXT -S=startup/01_lzssepm.lua -P=lss/lzssepm.lua') shell.run('startup/01_lzssepm.lua') shell.run('lzssepm \'vrcx.lua\' \'bin/vrcx.lua\' true true true')"
 
       - name: debug-bin
         run: ls ..
