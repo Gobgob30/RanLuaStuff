@@ -1,61 +1,61 @@
-name: Build and Publish
+# name: Build and Publish
 
-on:
-  push:
-    branches:
-      - main # Adjust this to your branch name
+# on:
+#   push:
+#     branches:
+#       - main # Adjust this to your branch name
 
-jobs:
-  build:
-    permissions: write-all
-    runs-on: ubuntu-latest
+# jobs:
+#   build:
+#     permissions: write-all
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
+#     steps:
+#       - name: Check out code
+#         uses: actions/checkout@v2
 
-      - name: Add repository, update and install craftos-pc
-        run: |
-          sudo add-apt-repository  -y ppa:jackmacwindows/ppa
-          sudo apt update
-          sudo apt -y install craftos-pc
+#       - name: Add repository, update and install craftos-pc
+#         run: |
+#           sudo add-apt-repository  -y ppa:jackmacwindows/ppa
+#           sudo apt update
+#           sudo apt -y install craftos-pc
 
-      - name: Clone repository
-        run: git clone https://github.com/Gobgob30/RanLuaStuff.git
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#       - name: Clone repository
+#         run: git clone https://github.com/Gobgob30/RanLuaStuff.git
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and publish
-        run: |
-          cd RanLuaStuff/VRCX  # Change to your repository directory
-          mkdir ../bin
-          # craftos -c --mount-rw .="." --mount-rw ./bin="../bin" --script "pastebin" --args "run 35C8TNCZ 'vrcx.lua' destination:'bin/vrcx.lua add_wget_and_pastebin_support:true rewrite:true allow_bad_compression_results:true"
-          # craftos --mount-rw .="." --mount-rw ./bin="../bin" --exec "shell.run('pastebin run 35C8TNCZ \'vrcx.lua\' \'bin/vrcx.lua\' add_wget_and_pastebin_support:true rewrite:true allow_bad_compression_results:true')"
-          craftos --mount-rw .="." --mount-rw ./bin="../bin" --exec "shell.run('pastebin run NJCdnEXT -S=startup/01_lzssepm.lua -P=lss/lzssepm.lua') shell.run('startup/01_lzssepm.lua') shell.run('lzssepm \'vrcx.lua\' \'bin/vrcx.lua\' true true true')"
+#       - name: Build and publish
+#         run: |
+#           cd RanLuaStuff/VRCX  # Change to your repository directory
+#           mkdir ../bin
+#           # craftos -c --mount-rw .="." --mount-rw ./bin="../bin" --script "pastebin" --args "run 35C8TNCZ 'vrcx.lua' destination:'bin/vrcx.lua add_wget_and_pastebin_support:true rewrite:true allow_bad_compression_results:true"
+#           # craftos --mount-rw .="." --mount-rw ./bin="../bin" --exec "shell.run('pastebin run 35C8TNCZ \'vrcx.lua\' \'bin/vrcx.lua\' add_wget_and_pastebin_support:true rewrite:true allow_bad_compression_results:true')"
+#           craftos --mount-rw .="." --mount-rw ./bin="../bin" --exec "shell.run('pastebin run NJCdnEXT -S=startup/01_lzssepm.lua -P=lss/lzssepm.lua') shell.run('startup/01_lzssepm.lua') shell.run('lzssepm \'vrcx.lua\' \'bin/vrcx.lua\' true true true')"
 
-      - name: debug-bin
-        run: ls ..
+#       - name: debug-bin
+#         run: ls ..
 
-      - name: debug-RanLuaStuff
-        run: ls
+#       - name: debug-RanLuaStuff
+#         run: ls
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
+#       - name: Create Release
+#         id: create_release
+#         uses: actions/create-release@v1
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         with:
+#           tag_name: ${{ github.ref }}
+#           release_name: Release ${{ github.ref }}
+#           draft: false
+#           prerelease: false
 
-      - name: Upload Release Assets
-        id: upload_release_asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./bin/*
-          asset_name: your-desired-asset-name.zip
+#       - name: Upload Release Assets
+#         id: upload_release_asset
+#         uses: actions/upload-release-asset@v1
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         with:
+#           upload_url: ${{ steps.create_release.outputs.upload_url }}
+#           asset_path: ./bin/*
+#           asset_name: vrcx.zip
