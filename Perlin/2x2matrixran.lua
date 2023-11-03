@@ -21,8 +21,8 @@ perlin.set_seed(os.epoch())
 for i = 1, y_size do
     local line = {}
     for j = 1, x_size do
-        local index = perlin.helpers.map(perlin.perlin_2d(j, i, scale, octaves, persistance, lacunarity), -1, 1, 1, #used)
-        -- local index = math.random(#used)
+        -- local index = perlin.helpers.map(perlin.perlin_2d(j, i, scale, octaves, persistance, lacunarity), -1, 1, 1, #used)
+        local index = math.random(#used)
         -- print(index)
         local value = table.remove(used, index)
         table.insert(line, value)
