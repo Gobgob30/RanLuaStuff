@@ -16,4 +16,5 @@ for _, command in ipairs(data) do
     if command.type == "file" then
         shell.run("wget", "https://raw.githubusercontent.com/Gobgob30/RanLuaStuff/main/ChatBox/Commands/" .. command.name, "commands/" .. command.name)
     end
+    sleep(1)
 end
