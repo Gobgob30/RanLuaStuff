@@ -1,3 +1,6 @@
+if fs.exists("startup.lua") then
+    shell.run("rm", "startup.lua")
+end
 shell.run("wget https://raw.githubusercontent.com/Gobgob30/RanLuaStuff/main/ChatBox/startup.lua")
 -- want to get all the command files in ChatBox/Commands and put it into ./commmands folder
 local req, err = http.get("https://api.github.com/repos/Gobgob30/RanLuaStuff/contents/ChatBox/Commands")
