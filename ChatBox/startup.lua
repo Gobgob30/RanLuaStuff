@@ -7,6 +7,7 @@ _env.require, _env.package = r.make(_env, "/")
 
 local function run_func(name, func, ...)
     local args = { ... }
+    commands.gamerule.commandBlockOutput(false)
     parallel.waitForAny(function()
         local ret = { pcall(func, table.unpack(args)) }
         local bool = ret[1]
@@ -30,6 +31,7 @@ local function run_func(name, func, ...)
             end
         end
     end)
+    commands.gamerule.commandBlockOutput(true)
 end
 if not fs.exists("commands") then
     fs.makeDir("commands")
