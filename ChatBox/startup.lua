@@ -1,38 +1,67 @@
 local chat_box = peripheral.find("chatBox")
-if not chat_box then error("Computer chat box not found", 2) end
+if not chat_box and not (commands.execute("if", "block", "~", "~-1", "~", "air") and commands.setblock("~", "~-1", "~", "advancedperipherals:chat_box") and sleep(.5) == nil) then error("Computer chat box not found", 2) end
+chat_box = chat_box or peripheral.find("chatBox")
 local owner_id = settings.get("owner_id")
-local r = require "cc.require"
-local _env = setmetatable({}, { __index = _ENV })
-_env.require, _env.package = r.make(_env, "/")
+
+local sub_z_index = settings.get("sub_index", 1)
+local sub_x_index = settings.get("sub_x_index", 0)
+local movement_bool = settings.get("movement_bool", true)
+local base_cp_id = os.getComputerID()
+local function summon_new_sub()
+    local cp_id = base_cp_id + sub_z_index
+    commands.setblock("~" .. sub_x_index, "~-1", "~" .. sub_z_index % 15 == 0 and 15 or sub_z_index % 15, "computercraft:computer_command{ComputerId" .. cp_id .. "} destroy")
+    commands.setblock("~" .. sub_x_index, "~", "~" .. sub_z_index % 15 == 0 and 15 or sub_z_index % 15, "computercraft:wired_modem_full{PeripheralAccess:1b}")
+    local disk
+    repeat
+        commands.setblock("~", "~", "~-1", "computercraft:disk_drive{Item:{id:\"computercraft:computer_normal\",Count:1b,tag:{ComputerId:" .. cp_id .. "}}} destroy")
+        sleep(1)
+        disk = peripheral.wrap("front")
+    until disk and disk.isPresent()
+    local data_f = fs.open("subs_startup.lua", "r")
+    local data = data_f.readAll()
+    data_f.close()
+    local f = fs.open(fs.combine(disk.getMountPath(), "startup.lua"), "w")
+    f.write(data)
+    f.close()
+    f = fs.open(fs.combine(disk.getMountPath(), ".settings"), "w")
+    f.write(textutils.serialize({
+        modem_port = sub_z_index + 1,
+        settings.get("owner_id"),
+    }))
+    f.close()
+    commands.computercraft("turn-on", "#" .. cp_id)
+    if sub_z_index % 15 == 0 then
+        sub_x_index = sub_x_index + 1
+    end
+    sub_z_index = sub_z_index + 1
+end
 
 local function run_func(name, func, ...)
-    local args = { ... }
-    commands.gamerule.commandBlockOutput(false)
-    parallel.waitForAny(function()
-        local ret = { pcall(func, table.unpack(args)) }
-        local bool = ret[1]
-        for i, v in ipairs(ret) do
-            if type(v) == "table" then
-                ret[i] = textutils.serialize(v)
-            else
-                ret[i] = tostring(v)
-            end
-        end
-        if bool then
-            commands.tellraw(name, { text = table.concat(ret, " "), color = "green" })
-        else
-            commands.tellraw(name, { text = table.concat(ret, " "), color = "red" })
-        end
-    end, function()
-        while true do
-            local event, username, message, uuid, isHidden = os.pullEvent("chat")
-            if uuid == owner_id and (message:match("cancel") or message:match("c") or message:match("stop") or message:match("s")) then
-                break
-            end
-        end
-    end)
-    commands.gamerule.commandBlockOutput(true)
+    local modem = peripheral.find("modem")
+    if not modem then
+        summon_new_sub()
+        modem = peripheral.find("modem")
+    end
+    modem.open(1)
+    local channel = 1
+    repeat
+        channel = channel + 1
+        modem.transmit(channel, 1, "ready")
+        local event, side, r_channel, replyChannel, message, distance
+        parallel.waitForAny(function()
+            event, side, r_channel, replyChannel, message, distance = os.pullEvent("modem_message")
+        end, function()
+            sleep(1)
+        end)
+    until message == "ready"
+    local data = textutils.serialise({
+        args = { ... },
+        name = name,
+        func = func,
+    })
+    modem.transmit(channel, 1, data)
 end
+
 if not fs.exists("commands") then
     fs.makeDir("commands")
 end
@@ -51,19 +80,12 @@ while true do
             table.insert(args, arg)
         end
         if fs.exists(fs.combine("commands", tostring(args[1]) .. ".lua")) then
-            local func, err = loadfile(fs.combine("commands", tostring(args[1]) .. ".lua"), "bt", _env)
-            if not func then
-                commands.tellraw(username, { text = "Error: " .. err, color = "red" })
-            else
-                run_func(username, func, table.unpack(args, 2))
-            end
+            local f = fs.open(fs.combine("commands", tostring(args[1]) .. ".lua"), "r")
+            local data = f.readAll()
+            f.close()
+            run_func(username, data)
         else
-            local func, err = load(message, owner_id, "bt", _env)
-            if not func then
-                commands.tellraw(username, { text = "Error: " .. err, color = "red" })
-            else
-                run_func(username, func)
-            end
+            run_func(username, message)
         end
     end
 end
