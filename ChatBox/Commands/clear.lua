@@ -13,4 +13,7 @@ for i, x in pairs(blocks) do
 end
 require("run")(cmds, 128)
 
+
+
+
 fs.delete(args[1] .. ".lua")
