@@ -11,6 +11,30 @@ local function update_startup(cp_id)
     local f = fs.open(fs.combine(disk.getMountPath(), "startup.lua"), "w")
     f.write(data)
     f.close()
+    f, errr = fs.open(fs.combine(disk.getMountPath(), ".settings"), "r")
+    if f then
+        data = f.readAll()
+        f.close()
+    else
+        data = textutils.serialize({
+            modem_port = cp_id - os.getComputerID() + 1,
+            owner_id = settings.get("owner_id"),
+        })
+    end
+    local u_data = textutils.unserialise(data)
+    if not u_data then
+        u_data = {
+            modem_port = cp_id - os.getComputerID() + 1,
+            owner_id = settings.get("owner_id"),
+        }
+    end
+    u_data.owner_id = settings.get("owner_id")
+    if not u_data.modem_port then
+        u_data.modem_port = cp_id - os.getComputerID() + 1
+    end
+    f = fs.open(fs.combine(disk.getMountPath(), ".settings"), "w")
+    f.write(textutils.serialise(u_data))
+    f.close()
     commands.computercraft("shutdown", "#" .. cp_id)
     commands.computercraft("turn-on", "#" .. cp_id)
     commands.setblock("~", "~", "~-1", "air")
