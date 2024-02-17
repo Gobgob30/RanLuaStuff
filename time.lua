@@ -7,7 +7,7 @@ local function stop(time)
     return (time or os.epoch("utc") / 1000) - _time
 end
 
-local format_str = "%c"
+local format_str = "%H:%M:%S:%3N"
 local function _print(time)
     print(os.date(format_str, stop(time)))
 end
