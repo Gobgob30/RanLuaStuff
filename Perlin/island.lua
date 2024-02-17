@@ -1,15 +1,12 @@
-local yieldTime -- variable to store the time of the last yield
-function yield()
-    if yieldTime then -- check if it already yielded
-        if os.clock() - yieldTime > 2 then -- if it were more than 2 seconds since the last yield
-            os.queueEvent("someFakeEvent") -- queue the event
-            os.pullEvent("someFakeEvent") -- pull it
-            yieldTime = nil -- reset the counter
-        end
-    else
-        yieldTime = os.clock() -- store the time
+local hasYield, yield = pcall(require, "yield")
+if not hasYield then
+    shell.run("wget", "https://raw.githubusercontent.com/Gobgob30/RanLuaStuff/main/yield.lua", "yield.lua")
+    hasYield, yield = pcall(require, "yield")
+    if not hasYield then
+        error("Failed to load yield\n" .. tostring(yield))
     end
 end
+yield = yield.yield
 
 local hasPerlin, perlin = pcall(require, "perlin")
 if not hasPerlin then
@@ -25,8 +22,8 @@ end
 local range = 128
 local highest, lowest = 300, 64
 local x, y, z = 300, 64, 300
-x = x + math.random( -range, range)
-z = z + math.random( -range, range)
+x = x + math.random(-range, range)
+z = z + math.random(-range, range)
 y = math.random(lowest, highest)
 local size = math.random(2, 128)
 local mapScale, mapPer, mapLac, mapOct = ranNum(.5, .000001), ranNum(.25, .875), ranNum(0, 10), 5

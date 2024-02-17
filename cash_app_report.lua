@@ -31,6 +31,8 @@ local function date_to_time(dateString, time_pattern, type_and_pos)
         EDT = -4, -- Eastern Daylight Time
         MST = -7, -- Mountain Standard Time
         MDT = -6, -- Mountain Daylight Time
+        WES = 0,  -- Western European Summer Time
+        WEST = 1, -- Western European Winter Time
     }
     local timestamp = os.time({
         year = tonumber(type_and_pos.year and values[type_and_pos.year]),                            -- year

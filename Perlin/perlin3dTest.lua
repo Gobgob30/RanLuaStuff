@@ -1,15 +1,12 @@
-local yieldTime -- variable to store the time of the last yield
-function yield()
-    if yieldTime then -- check if it already yielded
-        if os.clock() - yieldTime > 2 then -- if it were more than 2 seconds since the last yield
-            os.queueEvent("someFakeEvent") -- queue the event
-            os.pullEvent("someFakeEvent") -- pull it
-            yieldTime = nil -- reset the counter
-        end
-    else
-        yieldTime = os.clock() -- store the time
+local hasYield, yield = pcall(require, "yield")
+if not hasYield then
+    shell.run("wget", "https://raw.githubusercontent.com/Gobgob30/RanLuaStuff/main/yield.lua", "yield.lua")
+    hasYield, yield = pcall(require, "yield")
+    if not hasYield then
+        error("Failed to load yield\n" .. tostring(yield))
     end
 end
+yield = yield.yield
 
 local args = { ... }
 local function parseArgs(arguments)
