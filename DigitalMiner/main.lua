@@ -17,7 +17,7 @@ local function new_ore_class(name, spawn, sleep_time)
 end
 local ores = {}
 local mined = settings.get("mined", {})
-local csv_url = settings.get("csv_url", "https://raw.githubusercontent.com/Gobgob30/RanLuaStuff/main/returns.csv")
+local csv_url = settings.get("csv_url", "https://raw.githubusercontent.com/Gobgob30/RanLuaStuff/main/DigitalMiner/returns.csv")
 local csv, err = http.get(csv_url)
 if not csv then
     error("Failed to get csv: " .. tostring(err))
