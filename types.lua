@@ -32,4 +32,3 @@
 ---@field name string the id of the item
 ---@field count number the count of the item
 ---@field nbt string | nil The NBT data of the item, or nil if not applicable.
-
