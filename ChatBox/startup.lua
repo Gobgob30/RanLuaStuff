@@ -1,22 +1,64 @@
+local m_settings = 1
+local s_settings = 2
+
+local m_ready_channel = 9
+local s_ready_channel = 10
+
 local chat_box = peripheral.find("chatBox")
-if not chat_box and not (commands.execute("if", "block", "~", "~-1", "~", "air") and commands.setblock("~", "~-1", "~", "advancedperipherals:chat_box") and sleep(.5) == nil) then error("Computer chat box not found", 2) end
+if not chat_box and not (commands.execute("if", "block", "~", "~-1", "~", "air") and commands.setblock("~", "~-1", "~", "advancedperipherals:chat_box") and sleep(.5) == nil) then error("Computer chat box not found and cannot create one", 2) end
 chat_box = chat_box or peripheral.find("chatBox")
 local owner_id = settings.get("owner_id")
 
-local sub_z_index = settings.get("sub_index", 1)
-local sub_x_index = settings.get("sub_x_index", 0)
-local movement_bool = settings.get("movement_bool", true)
-local base_cp_id = os.getComputerID()
-local function summon_new_sub()
-    local cp_id = base_cp_id + sub_z_index
-    commands.setblock("~" .. sub_x_index, "~-1", "~" .. sub_z_index % 15 == 0 and 15 or sub_z_index % 15, "computercraft:computer_command{ComputerId:" .. cp_id .. "} destroy")
-    commands.setblock("~" .. sub_x_index, "~", "~" .. sub_z_index % 15 == 0 and 15 or sub_z_index % 15, "computercraft:wired_modem_full{PeripheralAccess:1b}")
-    local disk
-    repeat
-        commands.setblock("~", "~", "~-1", "computercraft:disk_drive{Item:{id:\"computercraft:computer_normal\",Count:1b,tag:{ComputerId:" .. cp_id .. "}}} destroy")
-        sleep(.1)
-        disk = peripheral.wrap("front")
-    until disk and disk.isDiskPresent()
+local use_modem
+local function find_modem()
+    local modem = peripheral.find("modem")
+    if not modem and not ((commands.execute("if", "block", "~", "~1", "~", "air") or commands.execute("if", "block", "~", "~1", "~", "computercraft:disk_drive")) and commands.setblock("~", "~1", "~", "computercraft:wired_modem_full{PeripheralAccess:1b}") and sleep(.5) == nil) then error("Computer modem not found and cannot create one", 2) end
+    use_modem = modem or peripheral.find("modem")
+    if use_modem then
+        use_modem.open(m_settings)
+        use_modem.open(m_ready_channel)
+    end
+    return use_modem and true or false
+end
+
+local increment = settings.get("increment", 1)
+local base_id = os.getComputerID()
+if not os.getComputerLabel() then
+    os.setComputerLabel("MainCommandPC")
+end
+
+function spiralCoordinates(iteration)
+    local x, z = 0, 0
+    local dx, dz = 0, -1
+    local currentIteration = 0
+
+    while currentIteration < iteration do
+        if x == z or (x < 0 and x == -x) or (x > 0 and x == 1 - z) or (x > 0 and x == z) or (x < 0 and x == -z) then
+            dx, dz = -dz, dx
+        end
+        x, z = x + dx, z + dz
+        currentIteration = currentIteration + 1
+    end
+
+    return x, z
+end
+
+local r_str = "~%d"
+local function stage1(id, pos_x, pos_z)
+    return {
+        function()
+            commands.setblock(r_str:format(pos_x), "~", r_str:format(pos_z), "computercraft:computer_command{ComputerId:" .. id .. "} destroy")
+        end,
+        function()
+            commands.setblock(r_str:format(pos_x), "~1", r_str:format(pos_z), "computercraft:wired_modem_full{PeripheralAccess:1b}")
+        end,
+        function()
+            commands.setblock("~", "~1", "~", "computercraft:disk_drive{Item:{id:\"computercraft:computer_normal\",Count:1b,tag:{ComputerId:" .. id .. "}}} destroy")
+        end
+    }
+end
+
+local function write_func(disk, port)
     local data_f = fs.open("subs_startup.lua", "r")
     local data = data_f.readAll()
     data_f.close()
@@ -25,62 +67,30 @@ local function summon_new_sub()
     f.close()
     f = fs.open(fs.combine(disk.getMountPath(), ".settings"), "w")
     f.write(textutils.serialize({
-        modem_port = sub_z_index + 1,
+        modem_port = port,
         owner_id = settings.get("owner_id"),
     }))
     f.close()
-    commands.computercraft("turn-on", "#" .. cp_id)
-    commands.setblock("~", "~", "~-1", "air")
-    commands.kill("@e[distance=..5,type=item]")
-    if sub_z_index % 15 == 0 then
-        sub_x_index = sub_x_index + 1
-    end
-    sub_z_index = sub_z_index + 1
-    settings.set("sub_index", sub_z_index)
-    settings.set("sub_x_index", sub_x_index)
-    settings.save()
+    sleep(1)
 end
 
-local function check_for_channel(modem)
-    local channel = 1
-    repeat
-        channel = channel + 1
-        modem.transmit(channel, 1, "ready")
-        local event, side, r_channel, replyChannel, message, distance
-        parallel.waitForAny(function()
-            event, side, r_channel, replyChannel, message, distance = os.pullEvent("modem_message")
-        end, function()
-            sleep(.15)
-        end)
-    until message == "ready" or channel > sub_z_index + 1
-    if channel > sub_z_index + 1 then
-        summon_new_sub()
-        sleep(1)
-        return check_for_channel(modem)
-    end
-    return channel
+local function stage2(id, pos_x, pos_z)
+    return {
+        function()
+            commands.computercraft("turn-on", "#" .. id)
+        end,
+        function()
+            commands.setblock("~", "~1", "~", "computercraft:wired_modem_full{PeripheralAccess:1b}")
+        end,
+        function()
+            commands.kill("@e[distance=..5,type=item]")
+        end,
+    }
 end
 
-local function run_func(name, func, ...)
-    local modem = peripheral.find("modem")
-    if not modem then
-        summon_new_sub()
-        modem = peripheral.find("modem")
-    end
-    modem.open(1)
-    local channel = check_for_channel(modem)
-    print("Channel: " .. channel)
-    local data = textutils.serialise({
-        args = { ... },
-        name = name,
-        func = func,
-    })
-    modem.transmit(channel, 1, data)
-end
-
-local defualt_prefixes = { "bios", "edit", "list", "lua", "motd", "paint", "shell", "modem_port" }
-local function is_defualt(name)
-    for i, v in ipairs(defualt_prefixes) do
+local default_prefixes = { "bios", "edit", "list", "lua", "motd", "paint", "shell", "modem_port" }
+local function is_default(name)
+    for i, v in ipairs(default_prefixes) do
         if name:match("^" .. v) then
             return true
         end
@@ -94,83 +104,258 @@ local banned_settings = {
     ["sub_x_index"] = true,
     ["movement_bool"] = true,
 }
-if not fs.exists("commands") then
-    fs.makeDir("commands")
+
+local function null_func()
+    return
 end
+
+local timers_funcs = {
+    {
+        is_active = true,
+        id = os.startTimer(1),
+        event = "push_setting",
+        time = 1
+    },
+    {
+        is_active = true,
+        id = os.startTimer(1),
+        event = "get_ready_ports",
+        time = 1
+    }
+}
+
+local tries = 0
+local ready_ports = {}
+local queuedRun_Events = {}
+local event_handlers = {
+    ["default"] = function(...)
+        print("unknown event", ...)
+    end,
+    ["chat"] = function(...)
+        local event, username, message, uuid, isHidden = ...
+        if not owner_id then
+            os.queueEvent("register", username, message, uuid)
+        elseif uuid ~= owner_id then
+            return
+        end
+        if message:sub(1, 1) == "!" then
+            os.queueEvent("run", username, message:sub(2))
+            return
+        end
+        os.queueEvent("parse", username, message)
+    end,
+    ["parse"] = function(...)
+        local username, message = ...
+        local args = {}
+        for arg in message:gmatch("[^%s\"']+|\"([^\"]*)\"|'([^']*)'") do
+            -- Remove any surrounding quotes
+            arg = arg:gsub('^"', ''):gsub('"$', ''):gsub("^'", ''):gsub("'$", '')
+            table.insert(args, arg)
+        end
+        if #args == 0 then
+            return
+        end
+        local name = args[1]
+        local fn = fs.combine("commands", name .. ".lua")
+        if name:lower() == "stop" or name:lower() == "cancel" then
+            os.queueEvent("terminate_subs", table.unpack(args, 2))
+            return
+        elseif fs.exists(fn) then
+            local f = fs.open(fn, "r")
+            local func = f.readAll()
+            f.close()
+            os.queueEvent("run", username, func, table.unpack(args, 2))
+        end
+    end,
+    ["modem_message"] = function(...)
+        local event, side, channel, replyChannel, message, distance = ...
+        if channel == m_ready_channel then -- Ready return channel
+            os.queueEvent("receive_ready", replyChannel, message)
+        elseif channel == m_settings then
+            os.queueEvent("grab_setting", message)
+        end
+    end,
+    ["run"] = function(...)
+        if not use_modem and not find_modem() then
+            return
+        end
+        if #ready_ports == 0 then
+            timers_funcs[2].is_active = true
+            timers_funcs[2].id = os.startTimer(.01)
+            table.insert(queuedRun_Events, { ... })
+            return
+        end
+        local t = { ... }
+        table.remove(t, 1)
+        local username, func, args = t[1], t[2], { table.unpack(t, 3) }
+        local port = table.remove(ready_ports)
+        use_modem.transmit(port, 0, textutils.serializeJSON({
+            func = func,
+            name = username,
+            args = args
+        }))
+    end,
+    ["register"] = function(...)
+        local event, username, message, uuid = ...
+        if message ~= "register" then
+            commands.tellraw(username, { text = "Please register this computer with the owner by having them type 'register'", color = "red" })
+            return
+        end
+        owner_id = uuid
+    end,
+    ["get_ready_ports"] = function(...)
+        if not use_modem and not find_modem() then
+            return
+        end
+        tries = tries + 1
+        if tries > 10 then
+            os.queueEvent("new_bot_pc")
+            tries = 0
+        end
+        use_modem.transmit(s_ready_channel, m_ready_channel, "ready")
+    end,
+    ["receive_ready"] = function(...)
+        local event, port, message = ...
+        if message == "ready" then
+            if timers_funcs[2].is_active then
+                timers_funcs[2].is_active = false
+                os.cancelTimer(timers_funcs[2].id)
+            end
+            table.insert(ready_ports, port)
+            if #queuedRun_Events > 0 then
+                local t = table.remove(queuedRun_Events, 1)
+                os.queueEvent(table.unpack(t))
+            end
+        end
+    end,
+    ["terminate_subs"] = function(...)
+        local ides = { ... }
+        table.remove(ides, 1)
+        for i, v in ipairs(ides) do
+            commands.computercraft("shutdown", "#" .. v)
+            sleep(.1)
+            commands.computercraft("turn-on", "#" .. v)
+        end
+    end,
+    ["new_bot_pc"] = function()
+        local x, z = spiralCoordinates(increment)
+        local cp_id = base_id + increment
+        local port = 10 + increment
+        local disk
+        repeat
+            parallel.waitForAll(table.unpack(stage1(cp_id, x, z)))
+            local _, side = os.pullEvent("peripheral")
+            disk = peripheral.wrap(side)
+        until disk and disk.isDiskPresent()
+        write_func(disk, port)
+        parallel.waitForAll(table.unpack(stage2(cp_id, x, z)))
+        increment = increment + 1
+        settings.set("increment", increment)
+        settings.save()
+        sleep(.5)
+        find_modem()
+        os.queueEvent("get_ready_ports")
+        os.queueEvent("redraw")
+    end,
+    ["redraw"] = function(...)
+        term.setCursorPos(1, 1)
+        term.clearLine()
+        print("Base ID is:", base_id)
+        term.clearLine()
+        print("Current Max is:", base_id + increment)
+    end,
+    ["timer"] = function(...)
+        local event, id = ...
+        for i, v in ipairs(timers_funcs) do
+            if v.id == id then
+                os.queueEvent(v.event)
+                v.id = v.is_active and os.startTimer(v.time) or 0
+                break
+            end
+        end
+    end,
+    ["grab_setting"] = function(...)
+        local message = ...
+        local data = textutils.unserializeJSON(message)
+        if not data then
+            return
+        end
+        for i, v in ipairs(settings.getNames()) do
+            if not is_default(v) then
+                settings.unset(v)
+            end
+        end
+        for i, v in pairs(data) do
+            if not is_default(i) then
+                settings.set(i, v)
+            end
+        end
+        settings.save()
+    end,
+    ["push_setting"] = function(...)
+        if not use_modem and not find_modem() then
+            return
+        end
+        local names = settings.getNames()
+        local setting = {}
+        for i, v in ipairs(names) do
+            if not is_default(v) and not banned_settings[v] then
+                setting[v] = settings.get(v)
+            end
+        end
+        local data = textutils.serializeJSON(setting)
+        use_modem.transmit(s_ready_channel, 0, data)
+    end,
+    ["alarm"] = null_func,
+    ["char"] = null_func,
+    ["computer_command"] = null_func,
+    ["disk"] = null_func,
+    ["disk_eject"] = null_func,
+    ["file_transfer"] = null_func,
+    ["http_check"] = null_func,
+    ["http_failure"] = null_func,
+    ["http_success"] = null_func,
+    ["key"] = null_func,
+    ["key_up"] = null_func,
+    ["monitor_resize"] = null_func,
+    ["monitor_touch"] = null_func,
+    ["mouse_click"] = null_func,
+    ["mouse_drag"] = null_func,
+    ["mouse_scroll"] = null_func,
+    ["mouse_up"] = null_func,
+    ["paste"] = null_func,
+    ["peripheral"] = null_func,
+    ["peripheral_detach"] = null_func,
+    ["rednet_message"] = null_func,
+    ["redstone"] = null_func,
+    ["speaker_audio_empty"] = null_func,
+    ["task_complete"] = null_func,
+    ["term_resize"] = null_func,
+    ["terminate"] = null_func,
+    ["turtle_inventory"] = null_func,
+    ["websocket_closed"] = null_func,
+    ["websocket_failure"] = null_func,
+    ["websocket_message"] = null_func,
+    ["websocket_success"] = null_func,
+    ["setting_changed"] = null_func,
+}
+
+local function event_handler_func()
+    local event = { os.pullEvent() }
+    local handler = event_handlers[event[1]] or event_handlers["default"]
+    handler(table.unpack(event))
+    -- local b, err = pcall(handler, table.unpack(event))
+    -- if not b then
+    --     print("Error in event handler", err)
+    -- end
+end
+term.clear()
+os.queueEvent("redraw")
+local x_max, y_max = term.getSize()
 while true do
-    parallel.waitForAny(function()
-        local event, username, message, uuid, isHidden = os.pullEvent("chat")
-        if not owner_id and message:match("register") then
-            owner_id = uuid
-            settings.set("owner_id", owner_id)
-            settings.save()
-            commands.tellraw(username, { text = "Registered as " .. owner_id, color = "green" })
-        elseif not owner_id then
-            commands.tellraw(username, { text = "Please register first", color = "red" })
-        elseif uuid == owner_id then
-            if (message:lower() == "cancel" or message:lower() == "stop") then
-                local modem = peripheral.find("modem")
-                for i = 2, sub_z_index do
-                    modem.transmit(i, 1, "suspend")
-                    parallel.waitForAny(function()
-                        while true do
-                            local _, side, channel, replyChannel, message_modem, distance = os.pullEvent("modem_message")
-                            if channel == 1 and replyChannel == i and message_modem == "suspended" then
-                                break
-                            end
-                        end
-                    end, function()
-                        sleep(.15)
-                    end)
-                end
-            else
-                local args = {}
-                for arg in message:gmatch("%S+") do
-                    table.insert(args, arg)
-                end
-                if fs.exists(fs.combine("commands", tostring(args[1]) .. ".lua")) then
-                    local f = fs.open(fs.combine("commands", tostring(args[1]) .. ".lua"), "r")
-                    local data = f.readAll()
-                    f.close()
-                    run_func(username, data, table.unpack(args, 2))
-                else
-                    run_func(username, message, table.unpack(args, 2))
-                end
-            end
-        end
-    end, function()
-        local event, side, channel, replyChannel, message, distance = os.pullEvent("modem_message")
-        if channel == 1 and (message ~= "suspended" or message ~= "ready") then
-            local data = textutils.unserialiseJSON(message)
-            if data then
-                for i, v in ipairs(settings.getNames()) do
-                    if not is_defualt(v) then
-                        settings.unset(v)
-                    end
-                end
-                for i, v in pairs(data) do
-                    if not is_defualt(i) then
-                        settings.set(i, v)
-                    end
-                end
-                settings.save()
-            end
-        end
-    end, function()
-        sleep(1)
-        local modem = peripheral.find("modem")
-        if modem then
-            local names = settings.getNames()
-            local setting = {}
-            for i, v in ipairs(names) do
-                if not is_defualt(v) and not banned_settings[v] then
-                    setting[v] = settings.get(v)
-                end
-            end
-            local data = textutils.serializeJSON(setting)
-            for i = 2, sub_z_index do
-                modem.transmit(i, 1, data)
-            end
-        end
-    end)
+    event_handler_func()
+    local x, y = term.getCursorPos()
+    if y == y_max then
+        os.queueEvent("redraw")
+    end
 end
