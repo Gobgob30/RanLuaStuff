@@ -17,7 +17,7 @@ if not modem then
     error("No modem found", 2)
 end
 
-local port = settings.get("modem_port") or error("No modem port set", 2)
+local port = settings.get("self.modem_port") or error("No modem port set", 2)
 modem.open(port)
 modem.open(s_ready_channel)
 modem.open(s_settings)
@@ -25,7 +25,7 @@ if not os.getComputerLabel() then
     os.setComputerLabel("SubCommandPC")
 end
 
-local defualt_prefixes = { "bios", "edit", "list", "lua", "motd", "paint", "shell", "modem_port" }
+local defualt_prefixes = { "bios", "edit", "list", "lua", "motd", "paint", "shell", "self" }
 local function is_default(name)
     for i, v in ipairs(defualt_prefixes) do
         if name:match("^" .. v) then
@@ -47,6 +47,15 @@ local function write_function(...)
     end
     commands.say(table.concat(a, " "))
 end
+
+local timer_funcs = {
+    {
+        is_active = true,
+        id = os.startTimer(1),
+        event = "push_settings",
+        time = 1,
+    },
+}
 
 local function null_func()
     return
@@ -85,7 +94,7 @@ local event_handlers = {
         end
     end,
     ["run"] = function(...)
-        local name, data = ...
+        local event, data = ...
         data.func = data.func or "return \"No function provided\""
         data.name = data.name or "@a"
         data.args = data.args or {}
@@ -103,12 +112,16 @@ local event_handlers = {
             local stop = term.getSize()
             parallel.waitForAny(function()
                     local ret = { pcall(func, table.unpack(data.args)) }
-                    if not table.remove(ret) then
-                        for i, v in ipairs(ret) do
-                            ret[i] = tostring(v)
-                        end
-                        commands.tellraw(data.name, { text = table.concat(ret), color = "red" })
+                    -- local bool =
+                    -- commands.say(bool, ret)
+                    local color = "green"
+                    for i, v in ipairs(ret) do
+                        ret[i] = tostring(v)
                     end
+                    if not table.remove(ret, 1) then
+                        color = "red"
+                    end
+                    commands.tellraw(data.name, { text = table.concat(ret), color = color })
                 end,
                 function()
                     while true do
@@ -126,8 +139,8 @@ local event_handlers = {
         term.clearLine()
         print("Current Port is:", port)
     end,
-    ["grab_setting"] = function(...)
-        local data = ...
+    ["grab_settings"] = function(...)
+        local event, data = ...
         for i, v in ipairs(settings.getNames()) do
             if not is_default(v) then
                 settings.unset(v)
@@ -152,9 +165,19 @@ local event_handlers = {
         end
         modem.transmit(m_settings, port, textutils.serializeJSON(setting))
     end,
-    ["timer"] = null_func,
+    ["timer"] = function(...)
+        local event, id = ...
+        for i, v in ipairs(timer_funcs) do
+            if v.id == id then
+                os.queueEvent(v.event)
+                v.id = v.is_active and os.startTimer(v.time) or 0
+                break
+            end
+        end
+    end,
     ["alarm"] = null_func,
     ["char"] = null_func,
+    ["chat"] = null_func,
     ["computer_command"] = null_func,
     ["disk"] = null_func,
     ["disk_eject"] = null_func,
