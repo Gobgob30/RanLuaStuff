@@ -83,22 +83,11 @@ local class_methods = {
     set_model = function(self, model, value)
         self.model = value
     end,
-    set_token = function(self, token)
+    set_token = function(self, token, name)
         self.open_ai_token = token
-        settings.set("open_ai_token", token)
     end,
     get_token = function(self)
         return self.open_ai_token
-    end,
-    get_saved_token = function(self, name)
-        return settings.get(name or "open_ai_token")
-    end,
-    set_saved_token = function(self, token, name)
-        settings.set(name or "open_ai_token", token)
-        settings.save()
-    end,
-    delete_saved_token = function(self, name)
-        settings.unset(name or "open_ai_token")
     end,
     chat_generate_message = function(self, message, role)
         role = role or self.roles["user"]
